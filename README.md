@@ -102,7 +102,19 @@ powershell -ExecutionPolicy Bypass -File scripts\build-windows.ps1
 powershell -ExecutionPolicy Bypass -File scripts\build-windows.ps1 -WithVideo
 ```
 
-输出为 `dist\SAMA-OpenDisplay.exe`。构建脚本会创建隔离虚拟环境、安装依赖并先执行测试。
+输出目录为 `dist\SAMA-OpenDisplay\`：
+
+```text
+SAMA-OpenDisplay.exe   主程序入口
+config.toml            可编辑的外部配置
+README.md              使用说明
+LICENSE
+PROTOCOL.md
+runtime\               Python 运行库、Pillow、psutil 和 DLL
+```
+
+构建使用 PyInstaller `onedir` 模式，不会把配置、DLL 和全部运行库硬塞进主 EXE。默认轻量构建明确排除
+OpenCV；只有使用 `-WithVideo` 时才把视频解码依赖放进 `runtime`。构建脚本会创建隔离环境、安装依赖并先执行测试。
 
 项目使用 Python 3.10+、Pillow 和 psutil。Windows 传输层仅使用 Python 标准库 `ctypes`，视频支持使用可选 OpenCV。
 
@@ -140,7 +152,7 @@ powershell -ExecutionPolicy Bypass -File scripts\build-windows.ps1 -WithVideo
 
 - 6.5 英寸全帧参数、BGRA、横屏转换均已真机验证；
 - `CC` 压缩差分流已离线核对原厂编码器，但尚未在 ROM 1.91 真机验证；
-- 独立 EXE 构建脚本已提供，但当前机器没有安装 PyInstaller，因此尚未生成并验证 EXE；
+- Windows 目录式 EXE 已构建并完成启动验证；配置和运行库保持为外部文件；
 - 原厂软件占用 COM5 时，替代应用不能同时打开该端口。
 
 协议细节和证据等级见 `PROTOCOL.md`。
