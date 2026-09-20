@@ -1,11 +1,13 @@
-# SAMA Open Display
+# SamaRP
 
-面向 SAMA 6.5 英寸 USB 小屏（720×1568）的开源替代控制器。目前已完成：
+**SAMA Remastering Project（SAMA 开源重制项目）**，面向 SAMA 6.5 英寸 USB 小屏
+（720×1568）的开源替代控制器。目前已完成：
 
 - 自动识别 `VID_1D6B&PID_A065` 主显示串口及 `VID_1A86&PID_CA65` 辅助设备；
 - 真机 HELLO 已验证，设备标识为 `chs_65inch.dev1_rom1.91`；
 - 1568×720 物理横屏画布；编码时转换为设备要求的 720×1568 协议缓冲区；
 - GUI 实时预览与命令行预览导出；
+- 深色/亮色界面、可切换显示主题和 `.samarppkg` 插件导入；
 - Rev-C `EF 69` 协议命令、BGRA 帧和 249/250 字节分块编码；
 - 不依赖 pyserial 的 Windows 原生串口传输层；
 - 单元测试和协议研究记录。
@@ -102,19 +104,28 @@ powershell -ExecutionPolicy Bypass -File scripts\build-windows.ps1
 powershell -ExecutionPolicy Bypass -File scripts\build-windows.ps1 -WithVideo
 ```
 
-输出目录为 `dist\SAMA-OpenDisplay\`：
+输出目录为 `dist\SamaRP\`：
 
 ```text
-SAMA-OpenDisplay.exe   主程序入口
+SamaRP.exe             主程序入口
 config.toml            可编辑的外部配置
+assets\                应用图标
+themes\                外部主题插件
 README.md              使用说明
 LICENSE
 PROTOCOL.md
+PLUGIN_SPEC.md          插件规范
 runtime\               Python 运行库、Pillow、psutil 和 DLL
 ```
 
 构建使用 PyInstaller `onedir` 模式，不会把配置、DLL 和全部运行库硬塞进主 EXE。默认轻量构建明确排除
 OpenCV；只有使用 `-WithVideo` 时才把视频解码依赖放进 `runtime`。构建脚本会创建隔离环境、安装依赖并先执行测试。
+
+## 主题与插件
+
+SamaRP 只使用统一的 `.samarppkg` 插件文件。GUI 中选择“导入主题 / 插件”即可安装；插件保存在主程序旁边的
+`themes` 目录，不会写入 EXE。v1 插件是纯数据主题，不执行第三方脚本、DLL 或 Python 代码。完整清单、版本、
+配色和背景图片约束见 `PLUGIN_SPEC.md`，仓库中的 `themes\sama-grid.samarppkg` 可作为示例。
 
 项目使用 Python 3.10+、Pillow 和 psutil。Windows 传输层仅使用 Python 标准库 `ctypes`，视频支持使用可选 OpenCV。
 

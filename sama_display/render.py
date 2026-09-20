@@ -8,6 +8,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps
 import psutil
 
 from . import WIDTH, HEIGHT
+from .theme import BUILTIN_THEMES, DisplayTheme
 
 
 BG = "#07111f"
@@ -38,7 +39,7 @@ def fit_image(image: Image.Image, size: tuple[int, int] = (WIDTH, HEIGHT), mode:
     return ImageOps.fit(image, size, Image.Resampling.LANCZOS, centering=(0.5, 0.5))
 
 
-def text_frame(text: str, subtitle: str = "SAMA Open Display") -> Image.Image:
+def text_frame(text: str, subtitle: str = "SamaRP") -> Image.Image:
     image = Image.new("RGB", (WIDTH, HEIGHT), BG)
     draw = ImageDraw.Draw(image)
     draw.rounded_rectangle((48, 48, WIDTH - 48, HEIGHT - 48), radius=32, fill=PANEL)
@@ -57,33 +58,74 @@ def _meter(draw: ImageDraw.ImageDraw, y: int, label: str, value: float, color: s
         draw.rounded_rectangle((64, top, end, top + 34), radius=17, fill=color)
 
 
-def dashboard_frame(now: datetime | None = None) -> Image.Image:
+def _background(theme: DisplayTheme) -> Image.Image:
+    image = Image.new("RGB", (WIDTH, HEIGHT), theme.background)
+    if theme.background_image is not None:
+        image = ImageOps.fit(theme.background_image, (WIDTH, HEIGHT), Image.Resampling.LANCZOS)
+        overlay = Image.new("RGBA", image.size, theme.background + "b8")
+        image = Image.alpha_composite(image.convert("RGBA"), overlay).convert("RGB")
+    return image
+
+
+def _system_values() -> tuple[float, float, float, int]:
+    cpu = psutil.cpu_percent(interval=0.05)
+    memory = psutil.virtual_memory().percent
+    disk = psutil.disk_usage(Path.home().anchor or "C:\\").percent
+    hours = int((datetime.now() - datetime.fromtimestamp(psutil.boot_time())).total_seconds() // 3600)
+    return cpu, memory, disk, hours
+
+
+def dashboard_frame(now: datetime | None = None, theme: DisplayTheme | None = None) -> Image.Image:
     now = now or datetime.now()
-    image = Image.new("RGB", (WIDTH, HEIGHT), BG)
+    theme = theme or BUILTIN_THEMES[0]
+    image = _background(theme)
     draw = ImageDraw.Draw(image)
-    draw.text((56, 55), now.strftime("%H:%M"), font=_font(126, True), fill=TEXT)
-    draw.text((64, 210), now.strftime("%Y-%m-%d  %A"), font=_font(28), fill=MUTED)
-    draw.rounded_rectangle((600, 46, WIDTH - 40, HEIGHT - 64), radius=34, fill=PANEL)
+    cpu, memory, disk, hours = _system_values()
+
+    if theme.preset == "minimal_clock":
+        draw.text((WIDTH // 2, 235), now.strftime("%H:%M"), font=_font(190, True), fill=theme.text, anchor="mm")
+        draw.text((WIDTH // 2, 370), now.strftime("%Y-%m-%d  %A"), font=_font(34), fill=theme.muted, anchor="mm")
+        values = (("CPU", cpu), ("MEM", memory), ("DISK", disk))
+        for index, (label, value) in enumerate(values):
+            x = 405 + index * 280
+            draw.rounded_rectangle((x, 470, x + 240, 590), radius=26, fill=theme.surface)
+            draw.text((x + 28, 495), label, font=_font(25, True), fill=theme.muted)
+            draw.text((x + 212, 540), f"{value:.0f}%", font=_font(38, True), fill=theme.accent, anchor="ra")
+        return image
+
+    if theme.preset == "system_grid":
+        draw.text((52, 45), now.strftime("%H:%M"), font=_font(92, True), fill=theme.text)
+        draw.text((55, 155), now.strftime("%Y-%m-%d"), font=_font(28), fill=theme.muted)
+        cards = (("CPU", cpu, theme.accent), ("MEMORY", memory, theme.accent_2),
+                 ("DISK", disk, theme.accent_3), ("UPTIME", hours, theme.accent))
+        for index, (label, value, color) in enumerate(cards):
+            column, row = index % 2, index // 2
+            x, y = 500 + column * 510, 55 + row * 310
+            draw.rounded_rectangle((x, y, x + 460, y + 260), radius=30, fill=theme.surface)
+            draw.text((x + 34, y + 32), label, font=_font(28, True), fill=theme.muted)
+            suffix = " h" if label == "UPTIME" else "%"
+            draw.text((x + 34, y + 112), f"{value:.0f}{suffix}", font=_font(70, True), fill=color)
+        return image
+
+    draw.text((56, 55), now.strftime("%H:%M"), font=_font(126, True), fill=theme.text)
+    draw.text((64, 210), now.strftime("%Y-%m-%d  %A"), font=_font(28), fill=theme.muted)
+    draw.rounded_rectangle((600, 46, WIDTH - 40, HEIGHT - 64), radius=34, fill=theme.surface)
 
     def landscape_meter(y: int, label: str, value: float, color: str) -> None:
-        draw.text((650, y), label, font=_font(30, True), fill=TEXT)
-        draw.text((WIDTH - 190, y), f"{value:5.1f}%", font=_font(28), fill=MUTED)
+        draw.text((650, y), label, font=_font(30, True), fill=theme.text)
+        draw.text((WIDTH - 190, y), f"{value:5.1f}%", font=_font(28), fill=theme.muted)
         top = y + 48
-        draw.rounded_rectangle((650, top, WIDTH - 90, top + 28), radius=14, fill="#1c3850")
+        draw.rounded_rectangle((650, top, WIDTH - 90, top + 28), radius=14, fill=theme.surface_alt)
         end = 650 + int((WIDTH - 740) * max(0, min(100, value)) / 100)
         if end > 650:
             draw.rounded_rectangle((650, top, end, top + 28), radius=14, fill=color)
 
-    landscape_meter(105, "CPU", psutil.cpu_percent(interval=0.05), "#32d3a2")
-    landscape_meter(265, "MEMORY", psutil.virtual_memory().percent, "#4fb6ff")
-    disk = psutil.disk_usage(Path.home().anchor or "C:\\").percent
-    landscape_meter(425, "DISK", disk, "#b084ff")
-    boot = datetime.fromtimestamp(psutil.boot_time())
-    uptime = datetime.now() - boot
-    hours = int(uptime.total_seconds() // 3600)
-    draw.text((64, 350), "SYSTEM UPTIME", font=_font(28), fill=MUTED)
-    draw.text((64, 405), f"{hours} hours", font=_font(58, True), fill=TEXT)
-    draw.text((64, 635), "1568 × 720  •  LANDSCAPE", font=_font(25), fill=ACCENT)
+    landscape_meter(105, "CPU", cpu, theme.accent)
+    landscape_meter(265, "MEMORY", memory, theme.accent_2)
+    landscape_meter(425, "DISK", disk, theme.accent_3)
+    draw.text((64, 350), "SYSTEM UPTIME", font=_font(28), fill=theme.muted)
+    draw.text((64, 405), f"{hours} hours", font=_font(58, True), fill=theme.text)
+    draw.text((64, 635), "1568 × 720  •  LANDSCAPE", font=_font(25), fill=theme.accent)
     return image
 
 

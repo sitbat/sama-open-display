@@ -1,0 +1,18 @@
+[theme]
+id = "sama-grid"
+name = "SAMA 网格"
+author = "SAMA Open Display"
+description = "四宫格系统状态，适合远距离查看"
+
+[display]
+preset = "system_grid"
+
+[palette]
+background = "#f4f7fb"
+surface = "#ffffff"
+surface_alt = "#dce6f0"
+text = "#10223c"
+muted = "#60738a"
+accent = "#0067c0"
+accent_2 = "#00a69c"
+accent_3 = "#7556d6"

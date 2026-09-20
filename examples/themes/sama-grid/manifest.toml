@@ -1,0 +1,9 @@
+[plugin]
+schema = 1
+id = "org.samarpproject.sama-grid"
+name = "SAMA 网格"
+version = "1.0.0"
+author = "SamaRP contributors"
+kind = "theme"
+entry = "theme.toml"
+description = "四宫格系统状态，适合远距离查看"

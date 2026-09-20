@@ -1,4 +1,4 @@
-"""Windows desktop UI for SAMA Open Display."""
+"""Windows desktop UI for SamaRP."""
 
 from __future__ import annotations
 
@@ -17,6 +17,7 @@ from .controller import DisplayController
 from .device import discover_devices
 from .media import iter_media
 from .render import dashboard_frame, fit_image, text_frame
+from .theme import DisplayTheme, discover_themes, install_theme
 
 EXPECTED_DEVICE_ID = "chs_65inch.dev1_rom1.91"
 
@@ -32,16 +33,34 @@ def external_config_path() -> Path:
     return application_directory() / "config.toml"
 
 
+def themes_directory() -> Path:
+    return application_directory() / "themes"
+
+
+def application_icon_path() -> Path:
+    return application_directory() / "assets" / "app-icon.ico"
+
+
 class DisplayApp(tk.Tk):
     def __init__(self):
         super().__init__()
         self.config_data = self._load_config()
-        self.title(f"SAMA Open Display  {__version__}")
-        self.geometry("1180x760")
-        self.minsize(980, 650)
-        self.configure(background="#0b1220")
+        self.title(f"SamaRP  {__version__}")
+        self.geometry("1240x790")
+        self.minsize(1060, 680)
 
-        self.frame_image = dashboard_frame()
+        icon = application_icon_path()
+        if icon.exists():
+            try:
+                self.iconbitmap(default=str(icon))
+            except tk.TclError:
+                pass
+
+        self.themes = discover_themes(themes_directory())
+        self.current_theme = self.themes[0]
+        self.appearance = tk.StringVar(value="light")
+        self.theme_name = tk.StringVar(value=self.current_theme.name)
+        self.frame_image = dashboard_frame(theme=self.current_theme)
         self.preview_photo = None
         self.animation = None
         self.animation_job = None
@@ -72,27 +91,42 @@ class DisplayApp(tk.Tk):
             return load_config()
 
     def _configure_style(self) -> None:
+        dark = self.appearance.get() == "dark"
+        self.ui = {
+            "root": "#0f1115" if dark else "#f5f7fa",
+            "panel": "#191c22" if dark else "#ffffff",
+            "surface": "#22262e" if dark else "#edf1f6",
+            "text": "#f4f6f9" if dark else "#172033",
+            "muted": "#a3adba" if dark else "#68778b",
+            "border": "#343a45" if dark else "#d8dee8",
+            "accent": "#4cc7e8" if dark else "#0067c0",
+        }
+        self.configure(background=self.ui["root"])
         style = ttk.Style(self)
         if "vista" in style.theme_names():
             style.theme_use("vista")
-        style.configure("App.TFrame", background="#0b1220")
-        style.configure("Panel.TFrame", background="#111c2e")
-        style.configure("Title.TLabel", background="#0b1220", foreground="#f3f7ff", font=("Segoe UI Semibold", 19))
-        style.configure("Sub.TLabel", background="#0b1220", foreground="#8ea2bd", font=("Segoe UI", 10))
-        style.configure("PanelTitle.TLabel", background="#111c2e", foreground="#dce8f8", font=("Segoe UI Semibold", 11))
-        style.configure("PanelText.TLabel", background="#111c2e", foreground="#9fb1c8", font=("Segoe UI", 9))
-        style.configure("Status.TLabel", background="#0f1a2c", foreground="#75e6c3", padding=(12, 9))
+        style.configure("App.TFrame", background=self.ui["root"])
+        style.configure("Panel.TFrame", background=self.ui["panel"])
+        style.configure("Title.TLabel", background=self.ui["root"], foreground=self.ui["text"], font=("Segoe UI Variable Display Semibold", 20))
+        style.configure("Sub.TLabel", background=self.ui["root"], foreground=self.ui["muted"], font=("Segoe UI Variable Text", 10))
+        style.configure("PanelTitle.TLabel", background=self.ui["panel"], foreground=self.ui["text"], font=("Segoe UI Variable Text Semibold", 11))
+        style.configure("PanelText.TLabel", background=self.ui["panel"], foreground=self.ui["muted"], font=("Segoe UI Variable Text", 9))
+        style.configure("Status.TLabel", background=self.ui["surface"], foreground=self.ui["accent"], padding=(12, 9))
         style.configure("Accent.TButton", font=("Segoe UI Semibold", 10), padding=(11, 8))
         style.configure("Side.TButton", padding=(9, 7))
+        style.configure("Panel.TRadiobutton", background=self.ui["panel"], foreground=self.ui["text"])
+        style.configure("Panel.TCheckbutton", background=self.ui["panel"], foreground=self.ui["text"])
 
     def _build_layout(self) -> None:
         root = ttk.Frame(self, style="App.TFrame", padding=18)
         root.pack(fill="both", expand=True)
         header = ttk.Frame(root, style="App.TFrame")
         header.pack(fill="x", pady=(0, 14))
-        ttk.Label(header, text="SAMA Open Display", style="Title.TLabel").pack(side="left")
-        ttk.Label(header, text="6.5 英寸 USB 小屏控制器", style="Sub.TLabel").pack(side="left", padx=(14, 0), pady=(8, 0))
+        ttk.Label(header, text="SamaRP", style="Title.TLabel").pack(side="left")
+        ttk.Label(header, text="SAMA 开源重制项目 · USB 小屏控制器", style="Sub.TLabel").pack(side="left", padx=(14, 0), pady=(8, 0))
         ttk.Label(header, text=f"v{__version__}", style="Sub.TLabel").pack(side="right", pady=(8, 0))
+        self.appearance_button = ttk.Button(header, text="☀  亮色", command=self.toggle_appearance)
+        self.appearance_button.pack(side="right", padx=(0, 12))
 
         body = ttk.Frame(root, style="App.TFrame")
         body.pack(fill="both", expand=True)
@@ -110,7 +144,7 @@ class DisplayApp(tk.Tk):
         top.grid(row=0, column=0, sticky="ew", pady=(0, 8))
         ttk.Label(top, textvariable=self.source_name, style="PanelTitle.TLabel").pack(side="left")
         ttk.Label(top, text="1568 × 720", style="PanelText.TLabel").pack(side="right")
-        self.preview = tk.Label(center, background="#050a12", bd=0, highlightthickness=1, highlightbackground="#263955")
+        self.preview = tk.Label(center, background=self.ui["surface"], bd=0, highlightthickness=1, highlightbackground=self.ui["border"])
         self.preview.grid(row=1, column=0, sticky="nsew")
         right = ttk.Frame(body, style="Panel.TFrame", padding=14, width=245)
         right.grid(row=0, column=2, sticky="nsew", padx=(12, 0))
@@ -124,9 +158,19 @@ class DisplayApp(tk.Tk):
         ttk.Button(panel, text="加载图片 / 媒体", style="Side.TButton", command=self.load_media).pack(fill="x", pady=3)
         ttk.Button(panel, text="文字画面", style="Side.TButton", command=self.show_text_dialog).pack(fill="x", pady=3)
         ttk.Separator(panel).pack(fill="x", pady=16)
+        ttk.Label(panel, text="显示主题", style="PanelTitle.TLabel").pack(anchor="w", pady=(0, 7))
+        self.theme_picker = ttk.Combobox(panel, state="readonly", textvariable=self.theme_name,
+                                         values=[theme.name for theme in self.themes])
+        self.theme_picker.pack(fill="x", pady=(0, 6))
+        self.theme_picker.bind("<<ComboboxSelected>>", self.change_theme)
+        ttk.Button(panel, text="导入主题 / 插件", command=self.import_theme).pack(fill="x")
+        self.theme_description = ttk.Label(panel, text=self.current_theme.description,
+                                           style="PanelText.TLabel", wraplength=175, justify="left")
+        self.theme_description.pack(anchor="w", pady=(7, 0))
+        ttk.Separator(panel).pack(fill="x", pady=16)
         ttk.Label(panel, text="画面适配", style="PanelTitle.TLabel").pack(anchor="w", pady=(0, 7))
-        ttk.Radiobutton(panel, text="填满并裁切", variable=self.fit_mode, value="cover").pack(anchor="w", pady=2)
-        ttk.Radiobutton(panel, text="完整包含", variable=self.fit_mode, value="contain").pack(anchor="w", pady=2)
+        ttk.Radiobutton(panel, text="填满并裁切", variable=self.fit_mode, value="cover", style="Panel.TRadiobutton").pack(anchor="w", pady=2)
+        ttk.Radiobutton(panel, text="完整包含", variable=self.fit_mode, value="contain", style="Panel.TRadiobutton").pack(anchor="w", pady=2)
         ttk.Label(panel, text="亮度", style="PanelTitle.TLabel").pack(anchor="w", pady=(18, 5))
         row = ttk.Frame(panel, style="Panel.TFrame")
         row.pack(fill="x")
@@ -178,7 +222,7 @@ class DisplayApp(tk.Tk):
 
     def _dashboard_tick(self) -> None:
         self.animation_job = None
-        self.frame_image = dashboard_frame()
+        self.frame_image = dashboard_frame(theme=self.current_theme)
         self.refresh_preview()
         self.animation_job = self.after(1000, self._dashboard_tick)
 
@@ -231,7 +275,7 @@ class DisplayApp(tk.Tk):
         dialog.transient(self)
         entry = tk.Text(dialog, font=("Microsoft YaHei UI", 14), wrap="word")
         entry.pack(fill="both", expand=True, padx=14, pady=14)
-        entry.insert("1.0", "你好，SAMA Open Display")
+        entry.insert("1.0", "你好，SamaRP")
         def apply():
             value = entry.get("1.0", "end").strip()
             if value:
@@ -304,7 +348,7 @@ class DisplayApp(tk.Tk):
             controller = self._controller()
             while not self.hardware_stop.is_set():
                 frame_started = monotonic()
-                frame = dashboard_frame()
+                frame = dashboard_frame(theme=self.current_theme)
                 controller.display(frame, brightness=self.hardware_brightness, panel_rotation=90, cancelled=self.hardware_stop.is_set)
                 frames += 1
                 self.after(0, self._live_frame, frame, frames, monotonic() - started)
@@ -345,6 +389,39 @@ class DisplayApp(tk.Tk):
         self.send_button.configure(state=state)
         if not live:
             self.live_button.configure(state=state)
+
+    def change_theme(self, _event=None) -> None:
+        selected = next((theme for theme in self.themes if theme.name == self.theme_name.get()), None)
+        if selected is None:
+            return
+        self.current_theme = selected
+        self.theme_description.configure(text=selected.description or f"作者：{selected.author}")
+        self.stop_preview_animation()
+        self.source_name.set(f"主题预览 · {selected.name}")
+        self.frame_image = dashboard_frame(theme=selected)
+        self.refresh_preview()
+
+    def import_theme(self) -> None:
+        path = filedialog.askopenfilename(filetypes=[("SamaRP 插件", "*.samarppkg")])
+        if not path:
+            return
+        try:
+            installed = install_theme(path, themes_directory())
+        except Exception as exc:
+            messagebox.showerror("主题导入失败", str(exc))
+            return
+        self.themes = discover_themes(themes_directory())
+        self.theme_picker.configure(values=[theme.name for theme in self.themes])
+        self.theme_name.set(installed.name)
+        self.change_theme()
+        self.status_text.set(f"已导入主题：{installed.name} · {installed.author}")
+
+    def toggle_appearance(self) -> None:
+        self.appearance.set("dark" if self.appearance.get() == "light" else "light")
+        self._configure_style()
+        dark = self.appearance.get() == "dark"
+        self.appearance_button.configure(text="☾  深色" if dark else "☀  亮色")
+        self.preview.configure(background=self.ui["surface"], highlightbackground=self.ui["border"])
 
     def close_app(self) -> None:
         self.closing = True

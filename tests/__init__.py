@@ -1,2 +1,1 @@
-"""Test suite for SAMA Open Display."""
-
+"""Test suite for SamaRP."""

@@ -4,12 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sama-open-display"
-version = "0.4.0"
-description = "Open-source controller and renderer for the SAMA 6.5-inch USB display"
+version = "0.5.0"
+description = "SamaRP open-source remastering project for the SAMA 6.5-inch USB display"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "GPL-3.0-or-later" }
-authors = [{ name = "SAMA Open Display contributors" }]
+authors = [{ name = "SamaRP contributors" }]
 dependencies = [
     "Pillow>=10",
     "psutil>=5.9",
