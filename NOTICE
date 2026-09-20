@@ -1,0 +1,12 @@
+SAMA Open Display
+Copyright (C) 2026 SAMA Open Display contributors
+
+This distribution is licensed under GPL-3.0-or-later. Protocol definitions in
+sama_display/protocol.py are derived in part from turing-smart-screen-python:
+
+  https://github.com/mathoudebine/turing-smart-screen-python
+
+turing-smart-screen-python is Copyright Mathoudebine and contributors and is
+licensed under GPL-3.0-or-later. No affiliation with SAMA, Turing, TURZX or
+their hardware vendors is claimed.
+

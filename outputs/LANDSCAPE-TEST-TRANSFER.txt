@@ -1,0 +1,13 @@
+SAMA Open Display landscape-canvas full-frame test
+Date: 2026-09-20 (Asia/Shanghai)
+Device: COM5 / VID_1D6B&PID_A065
+Identity: chs_65inch.dev1_rom1.91
+User canvas: hardware-test-card-landscape.png, 1568x720
+Protocol scan buffer: 720x1568 after 90-degree clockwise transform
+Brightness command: 60 percent
+Protocol write bytes: 4,536,000
+Transport block size: 250 bytes
+Transfer duration: 1.15 seconds
+Result: host-side transfer completed without exception; COM5 closed
+Visual result: user photo confirmed correct orientation, colors, corners, border and center
+Firmware/reset operations: none

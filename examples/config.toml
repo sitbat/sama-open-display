@@ -1,0 +1,19 @@
+[display]
+width = 1568
+height = 720
+brightness = 70
+orientation = "landscape"
+# The first hardware test proved that this installed panel needs a clockwise
+# pre-rotation from the landscape canvas into its portrait scan buffer.
+panel_rotation = 90
+
+[connection]
+port = "auto"
+baudrate = 115200
+timeout_ms = 1500
+reconnect_attempts = 3
+
+[content]
+mode = "dashboard"
+fps = 2.0
+fit = "cover"

@@ -1,0 +1,9 @@
+SAMA Open Display hardware handshake
+Date: 2026-09-20 (Asia/Shanghai)
+Device: USB VID_1D6B&PID_A065, auto-detected as COM5
+Operation: one padded Rev-C HELLO command; no image/reset/firmware command
+Response length: 23 bytes
+Response hex: 63 68 73 5F 36 35 69 6E 63 68 2E 64 65 76 31 5F 72 6F 6D 31 2E 39 31
+Response ASCII: chs_65inch.dev1_rom1.91
+Port closed immediately after response.
+

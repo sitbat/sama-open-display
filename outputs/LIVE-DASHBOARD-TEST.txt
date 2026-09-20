@@ -1,0 +1,13 @@
+SAMA Open Display live dashboard hardware test
+Date: 2026-09-20 (Asia/Shanghai)
+Device identity: chs_65inch.dev1_rom1.91
+Canvas: 1568x720 landscape
+Protocol buffer: 720x1568 BGRA
+Requested duration: 10 seconds
+Requested interval: 2 seconds
+Frames transmitted: 5
+Elapsed time: 9.405 seconds
+Effective frame rate: 0.532 FPS
+Result: completed without exception; COM5 closed automatically
+Firmware/reset operations: none
+

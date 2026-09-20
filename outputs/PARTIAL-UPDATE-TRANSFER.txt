@@ -1,0 +1,12 @@
+SAMA Open Display CC partial-update hardware test
+Date: 2026-09-20 (Asia/Shanghai)
+Device identity: chs_65inch.dev1_rom1.91
+Physical target: x=100, y=120, width=120, height=80
+Content: cyan rectangle, white border, black CC label
+Protocol bytes written: 39,500
+Transfer duration: 0.012 seconds
+Full-frame reference: approximately 4,536,000 bytes / 1.1 seconds
+Result: transport completed without exception; COM5 closed
+Visual position/integrity: incompatible; produced a vertical corruption band instead of a rectangle
+Recovery: verified full-frame dashboard was sent successfully afterward
+Firmware/reset operations: none
