@@ -1,6 +1,6 @@
 import unittest
 
-from sama_display.app import application_directory, application_icon_path, external_config_path, themes_directory
+from sama_display.app import application_directory, application_icon_path, external_config_path, plugins_directory
 
 
 class AppPathTests(unittest.TestCase):
@@ -9,7 +9,7 @@ class AppPathTests(unittest.TestCase):
         self.assertFalse(str(external_config_path()).endswith("runtime\\config.toml"))
 
     def test_assets_and_themes_stay_external(self):
-        self.assertEqual(themes_directory(), application_directory() / "themes")
+        self.assertEqual(plugins_directory(), application_directory() / "plugins")
         self.assertEqual(application_icon_path(), application_directory() / "assets" / "app-icon.ico")
 
 

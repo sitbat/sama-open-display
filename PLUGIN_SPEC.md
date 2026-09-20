@@ -24,11 +24,30 @@ author = "Example author"
 kind = "theme"
 entry = "theme.toml"
 description = "A bright four-card system monitor"
+dependencies = ["org.samarpproject.system-metrics"]
+permissions = []
 ```
 
 Plugin IDs are stable lowercase identifiers. Versions follow semantic
-versioning. Version 1 supports the `theme` kind. Theme plugins are data-only:
-SamaRP does not execute Python, DLLs, scripts, or commands from a package.
+versioning. Version 1 supports `theme` and `data-provider`. Both are
+declarative: SamaRP does not execute Python, DLLs, scripts, or commands from a
+package.
+
+## Dependencies and data providers
+
+A theme lists required provider IDs in `plugin.dependencies`. The plugin center
+will not enable it while a dependency is missing or disabled. Data providers
+declare one host adapter and explicit permissions. v1 provides the trusted
+`builtin.system` adapter; it may expose only permissions granted in the
+manifest:
+
+- `system.cpu`, `system.memory`, `system.uptime`
+- `storage.usage`, `network.counters`, `process.summary`
+
+Themes consume namespaced values such as `system.cpu.percent`,
+`system.memory.percent`, `storage.root.percent`, and
+`system.uptime.seconds`. Providers only read aggregate metrics; they receive no
+hardware-write or command-execution interface.
 
 ## Theme entry
 

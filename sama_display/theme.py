@@ -38,6 +38,8 @@ class DisplayTheme:
     accent_3: str = "#b084ff"
     background_image: Image.Image | None = None
     source: Path | None = None
+    plugin_id: str = ""
+    dependencies: tuple[str, ...] = ()
 
 
 BUILTIN_THEMES = (
@@ -62,7 +64,8 @@ def _color(value: object, key: str, fallback: str) -> str:
     return value.lower()
 
 
-def _parse_theme(raw: dict, *, source: Path | None = None, background_image=None) -> DisplayTheme:
+def _parse_theme(raw: dict, *, source: Path | None = None, background_image=None,
+                 plugin_id: str = "", dependencies: tuple[str, ...] = ()) -> DisplayTheme:
     allowed_sections = {"theme", "display", "palette"}
     unknown = set(raw) - allowed_sections
     if unknown:
@@ -89,7 +92,8 @@ def _parse_theme(raw: dict, *, source: Path | None = None, background_image=None
         accent=_color(palette.get("accent"), "accent", defaults.accent),
         accent_2=_color(palette.get("accent_2"), "accent_2", defaults.accent_2),
         accent_3=_color(palette.get("accent_3"), "accent_3", defaults.accent_3),
-        background_image=background_image, source=source,
+        background_image=background_image, source=source, plugin_id=plugin_id,
+        dependencies=dependencies,
     )
 
 
@@ -118,10 +122,11 @@ def load_theme(path: str | Path) -> DisplayTheme:
                 raise ValueError("background image exceeds 12 MB")
             with Image.open(BytesIO(package.read(background_name))) as opened:
                 image = opened.convert("RGB")
-        return _parse_theme(raw, source=path, background_image=image)
+        return _parse_theme(raw, source=path, background_image=image,
+                            plugin_id=manifest.plugin_id, dependencies=manifest.dependencies)
 
 
-def discover_themes(directory: str | Path) -> list[DisplayTheme]:
+def discover_themes(directory: str | Path, enabled_ids: set[str] | None = None) -> list[DisplayTheme]:
     themes = list(BUILTIN_THEMES)
     directory = Path(directory)
     if directory.exists():
@@ -129,6 +134,8 @@ def discover_themes(directory: str | Path) -> list[DisplayTheme]:
             try:
                 loaded = load_theme(path)
             except (OSError, ValueError, zipfile.BadZipFile):
+                continue
+            if enabled_ids is not None and loaded.plugin_id not in enabled_ids:
                 continue
             themes = [theme for theme in themes if theme.theme_id != loaded.theme_id]
             themes.append(loaded)

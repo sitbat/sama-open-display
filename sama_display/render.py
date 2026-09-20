@@ -67,20 +67,28 @@ def _background(theme: DisplayTheme) -> Image.Image:
     return image
 
 
-def _system_values() -> tuple[float, float, float, int]:
-    cpu = psutil.cpu_percent(interval=0.05)
-    memory = psutil.virtual_memory().percent
-    disk = psutil.disk_usage(Path.home().anchor or "C:\\").percent
-    hours = int((datetime.now() - datetime.fromtimestamp(psutil.boot_time())).total_seconds() // 3600)
+def _system_values(data: dict[str, float | int] | None = None) -> tuple[float, float, float, int]:
+    if data is None:
+        cpu = psutil.cpu_percent(interval=0.05)
+        memory = psutil.virtual_memory().percent
+        disk = psutil.disk_usage(Path.home().anchor or "C:\\").percent
+        uptime = int((datetime.now() - datetime.fromtimestamp(psutil.boot_time())).total_seconds())
+    else:
+        cpu = float(data.get("system.cpu.percent", 0))
+        memory = float(data.get("system.memory.percent", 0))
+        disk = float(data.get("storage.root.percent", 0))
+        uptime = int(data.get("system.uptime.seconds", 0))
+    hours = uptime // 3600
     return cpu, memory, disk, hours
 
 
-def dashboard_frame(now: datetime | None = None, theme: DisplayTheme | None = None) -> Image.Image:
+def dashboard_frame(now: datetime | None = None, theme: DisplayTheme | None = None,
+                    data: dict[str, float | int] | None = None) -> Image.Image:
     now = now or datetime.now()
     theme = theme or BUILTIN_THEMES[0]
     image = _background(theme)
     draw = ImageDraw.Draw(image)
-    cpu, memory, disk, hours = _system_values()
+    cpu, memory, disk, hours = _system_values(data)
 
     if theme.preset == "minimal_clock":
         draw.text((WIDTH // 2, 235), now.strftime("%H:%M"), font=_font(190, True), fill=theme.text, anchor="mm")

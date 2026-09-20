@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import ctypes
 import sys
 import threading
 from time import monotonic, sleep
@@ -14,10 +15,12 @@ from PIL import Image, ImageTk
 from . import __version__
 from .config import AppConfig, load_config
 from .controller import DisplayController
+from .data_provider import DataService
 from .device import discover_devices
 from .media import iter_media
 from .render import dashboard_frame, fit_image, text_frame
-from .theme import DisplayTheme, discover_themes, install_theme
+from .plugin import PluginManager
+from .theme import discover_themes
 
 EXPECTED_DEVICE_ID = "chs_65inch.dev1_rom1.91"
 
@@ -33,8 +36,8 @@ def external_config_path() -> Path:
     return application_directory() / "config.toml"
 
 
-def themes_directory() -> Path:
-    return application_directory() / "themes"
+def plugins_directory() -> Path:
+    return application_directory() / "plugins"
 
 
 def application_icon_path() -> Path:
@@ -56,11 +59,14 @@ class DisplayApp(tk.Tk):
             except tk.TclError:
                 pass
 
-        self.themes = discover_themes(themes_directory())
+        self.plugin_manager = PluginManager(plugins_directory())
+        self.plugins = self.plugin_manager.scan()
+        self.data_service = DataService(self.plugins)
+        self.themes = discover_themes(plugins_directory(), self.plugin_manager.enabled_ids())
         self.current_theme = self.themes[0]
         self.appearance = tk.StringVar(value="light")
         self.theme_name = tk.StringVar(value=self.current_theme.name)
-        self.frame_image = dashboard_frame(theme=self.current_theme)
+        self.frame_image = dashboard_frame(theme=self.current_theme, data=self.data_service.snapshot())
         self.preview_photo = None
         self.animation = None
         self.animation_job = None
@@ -80,6 +86,7 @@ class DisplayApp(tk.Tk):
         self.bind("<Configure>", lambda _event: self.after_idle(self.refresh_preview))
         self.after(50, self.refresh_devices)
         self.after(80, self.refresh_preview)
+        self.after(0, self._apply_windows_style)
 
     def _load_config(self) -> AppConfig:
         path = external_config_path()
@@ -116,6 +123,23 @@ class DisplayApp(tk.Tk):
         style.configure("Side.TButton", padding=(9, 7))
         style.configure("Panel.TRadiobutton", background=self.ui["panel"], foreground=self.ui["text"])
         style.configure("Panel.TCheckbutton", background=self.ui["panel"], foreground=self.ui["text"])
+        style.configure("Treeview", rowheight=32, font=("Segoe UI Variable Text", 10))
+        style.configure("Treeview.Heading", font=("Segoe UI Variable Text Semibold", 10))
+
+    def _apply_windows_style(self) -> None:
+        """Use DWM dark title bars and rounded corners without a UI runtime."""
+        if sys.platform != "win32":
+            return
+        try:
+            hwnd = self.winfo_id()
+            dark = ctypes.c_int(1 if self.appearance.get() == "dark" else 0)
+            corner = ctypes.c_int(2)  # DWMWCP_ROUND
+            backdrop = ctypes.c_int(2)  # DWMSBT_MAINWINDOW (Mica where supported)
+            ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 20, ctypes.byref(dark), 4)
+            ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 33, ctypes.byref(corner), 4)
+            ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 38, ctypes.byref(backdrop), 4)
+        except (AttributeError, OSError):
+            pass
 
     def _build_layout(self) -> None:
         root = ttk.Frame(self, style="App.TFrame", padding=18)
@@ -128,7 +152,14 @@ class DisplayApp(tk.Tk):
         self.appearance_button = ttk.Button(header, text="☀  亮色", command=self.toggle_appearance)
         self.appearance_button.pack(side="right", padx=(0, 12))
 
-        body = ttk.Frame(root, style="App.TFrame")
+        self.pages = ttk.Notebook(root)
+        self.pages.pack(fill="both", expand=True)
+        display_page = ttk.Frame(self.pages, style="App.TFrame", padding=(0, 12, 0, 0))
+        plugins_page = ttk.Frame(self.pages, style="App.TFrame", padding=14)
+        self.pages.add(display_page, text="  显示与设备  ")
+        self.pages.add(plugins_page, text="  插件中心  ")
+
+        body = ttk.Frame(display_page, style="App.TFrame")
         body.pack(fill="both", expand=True)
         body.columnconfigure(1, weight=1)
         body.rowconfigure(0, weight=1)
@@ -150,6 +181,7 @@ class DisplayApp(tk.Tk):
         right.grid(row=0, column=2, sticky="nsew", padx=(12, 0))
         right.grid_propagate(False)
         self._device_panel(right)
+        self._plugin_panel(plugins_page)
         ttk.Label(root, textvariable=self.status_text, style="Status.TLabel", anchor="w").pack(fill="x", pady=(12, 0))
 
     def _content_panel(self, panel) -> None:
@@ -163,7 +195,7 @@ class DisplayApp(tk.Tk):
                                          values=[theme.name for theme in self.themes])
         self.theme_picker.pack(fill="x", pady=(0, 6))
         self.theme_picker.bind("<<ComboboxSelected>>", self.change_theme)
-        ttk.Button(panel, text="导入主题 / 插件", command=self.import_theme).pack(fill="x")
+        ttk.Button(panel, text="打开插件中心", command=lambda: self.pages.select(1)).pack(fill="x")
         self.theme_description = ttk.Label(panel, text=self.current_theme.description,
                                            style="PanelText.TLabel", wraplength=175, justify="left")
         self.theme_description.pack(anchor="w", pady=(7, 0))
@@ -194,6 +226,40 @@ class DisplayApp(tk.Tk):
         ttk.Label(panel, text="外部配置", style="PanelTitle.TLabel").pack(anchor="w")
         ttk.Label(panel, text=str(external_config_path()), style="PanelText.TLabel", wraplength=210, justify="left").pack(anchor="w", pady=(6, 0))
 
+    def _plugin_panel(self, panel) -> None:
+        heading = ttk.Frame(panel, style="App.TFrame")
+        heading.pack(fill="x", pady=(0, 12))
+        ttk.Label(heading, text="插件中心", style="Title.TLabel").pack(side="left")
+        ttk.Label(heading, text="批量安装、启停和管理主题及数据前置插件", style="Sub.TLabel").pack(side="left", padx=14, pady=(8, 0))
+        ttk.Button(heading, text="批量安装…", style="Accent.TButton", command=self.install_plugins).pack(side="right")
+
+        table_frame = ttk.Frame(panel, style="Panel.TFrame", padding=10)
+        table_frame.pack(fill="both", expand=True)
+        columns = ("name", "kind", "version", "status", "dependencies", "permissions")
+        self.plugin_table = ttk.Treeview(table_frame, columns=columns, show="headings", selectmode="extended")
+        labels = {
+            "name": "插件", "kind": "类型", "version": "版本", "status": "状态",
+            "dependencies": "前置插件", "permissions": "数据权限",
+        }
+        widths = {"name": 190, "kind": 110, "version": 75, "status": 150, "dependencies": 250, "permissions": 290}
+        for column in columns:
+            self.plugin_table.heading(column, text=labels[column])
+            self.plugin_table.column(column, width=widths[column], minwidth=70, anchor="w")
+        scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=self.plugin_table.yview)
+        self.plugin_table.configure(yscrollcommand=scrollbar.set)
+        self.plugin_table.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        actions = ttk.Frame(panel, style="App.TFrame")
+        actions.pack(fill="x", pady=(12, 0))
+        ttk.Button(actions, text="启用所选", command=lambda: self.set_plugins_enabled(True)).pack(side="left")
+        ttk.Button(actions, text="停用所选", command=lambda: self.set_plugins_enabled(False)).pack(side="left", padx=8)
+        ttk.Button(actions, text="卸载所选", command=self.uninstall_plugins).pack(side="left")
+        ttk.Button(actions, text="刷新", command=self.refresh_plugins).pack(side="right")
+        self.plugin_summary = ttk.Label(actions, style="Sub.TLabel")
+        self.plugin_summary.pack(side="right", padx=14)
+        self.refresh_plugins()
+
     def refresh_devices(self) -> None:
         devices = discover_devices()
         display = next((d for d in devices if d.role == "display"), None)
@@ -222,7 +288,7 @@ class DisplayApp(tk.Tk):
 
     def _dashboard_tick(self) -> None:
         self.animation_job = None
-        self.frame_image = dashboard_frame(theme=self.current_theme)
+        self.frame_image = dashboard_frame(theme=self.current_theme, data=self.data_service.snapshot())
         self.refresh_preview()
         self.animation_job = self.after(1000, self._dashboard_tick)
 
@@ -348,7 +414,7 @@ class DisplayApp(tk.Tk):
             controller = self._controller()
             while not self.hardware_stop.is_set():
                 frame_started = monotonic()
-                frame = dashboard_frame(theme=self.current_theme)
+                frame = dashboard_frame(theme=self.current_theme, data=self.data_service.snapshot())
                 controller.display(frame, brightness=self.hardware_brightness, panel_rotation=90, cancelled=self.hardware_stop.is_set)
                 frames += 1
                 self.after(0, self._live_frame, frame, frames, monotonic() - started)
@@ -398,23 +464,70 @@ class DisplayApp(tk.Tk):
         self.theme_description.configure(text=selected.description or f"作者：{selected.author}")
         self.stop_preview_animation()
         self.source_name.set(f"主题预览 · {selected.name}")
-        self.frame_image = dashboard_frame(theme=selected)
+        self.frame_image = dashboard_frame(theme=selected, data=self.data_service.snapshot())
         self.refresh_preview()
 
-    def import_theme(self) -> None:
-        path = filedialog.askopenfilename(filetypes=[("SamaRP 插件", "*.samarppkg")])
-        if not path:
+    def _selected_plugin_ids(self) -> list[str]:
+        return list(self.plugin_table.selection())
+
+    def install_plugins(self) -> None:
+        paths = filedialog.askopenfilenames(filetypes=[("SamaRP 插件", "*.samarppkg")])
+        if not paths:
             return
         try:
-            installed = install_theme(path, themes_directory())
+            installed = self.plugin_manager.install_many(list(paths))
         except Exception as exc:
-            messagebox.showerror("主题导入失败", str(exc))
+            messagebox.showerror("插件安装失败", str(exc))
             return
-        self.themes = discover_themes(themes_directory())
-        self.theme_picker.configure(values=[theme.name for theme in self.themes])
-        self.theme_name.set(installed.name)
-        self.change_theme()
-        self.status_text.set(f"已导入主题：{installed.name} · {installed.author}")
+        self.refresh_plugins()
+        self.status_text.set(f"已安装 {len(installed)} 个插件")
+
+    def refresh_plugins(self) -> None:
+        self.plugins = self.plugin_manager.scan()
+        self.data_service = DataService(self.plugins)
+        if hasattr(self, "plugin_table"):
+            for item in self.plugin_table.get_children():
+                self.plugin_table.delete(item)
+            kind_names = {"theme": "显示主题", "data-provider": "数据前置"}
+            for item in self.plugins:
+                manifest = item.manifest
+                status = item.problem or ("已启用" if item.enabled else "已停用")
+                self.plugin_table.insert("", "end", iid=manifest.plugin_id, values=(
+                    manifest.name, kind_names.get(manifest.kind, manifest.kind), manifest.version,
+                    status, ", ".join(manifest.dependencies) or "—",
+                    ", ".join(manifest.permissions) or "—",
+                ))
+            enabled = sum(item.enabled and not item.problem for item in self.plugins)
+            self.plugin_summary.configure(text=f"{len(self.plugins)} 个插件 · {enabled} 个可用")
+        previous = self.current_theme.theme_id if hasattr(self, "current_theme") else ""
+        self.themes = discover_themes(plugins_directory(), self.plugin_manager.enabled_ids())
+        if hasattr(self, "theme_picker"):
+            self.theme_picker.configure(values=[theme.name for theme in self.themes])
+            selected = next((theme for theme in self.themes if theme.theme_id == previous), self.themes[0])
+            self.current_theme = selected
+            self.theme_name.set(selected.name)
+
+    def set_plugins_enabled(self, enabled: bool) -> None:
+        selected = self._selected_plugin_ids()
+        if not selected:
+            return
+        try:
+            self.plugin_manager.set_enabled(selected, enabled)
+            self.refresh_plugins()
+        except Exception as exc:
+            messagebox.showerror("插件状态未更改", str(exc))
+
+    def uninstall_plugins(self) -> None:
+        selected = self._selected_plugin_ids()
+        if not selected:
+            return
+        if not messagebox.askyesno("卸载插件", f"确定卸载所选 {len(selected)} 个插件？\n插件文件将从外部 plugins 目录删除。"):
+            return
+        try:
+            self.plugin_manager.uninstall(selected)
+            self.refresh_plugins()
+        except Exception as exc:
+            messagebox.showerror("插件卸载失败", str(exc))
 
     def toggle_appearance(self) -> None:
         self.appearance.set("dark" if self.appearance.get() == "light" else "light")
@@ -422,6 +535,7 @@ class DisplayApp(tk.Tk):
         dark = self.appearance.get() == "dark"
         self.appearance_button.configure(text="☾  深色" if dark else "☀  亮色")
         self.preview.configure(background=self.ui["surface"], highlightbackground=self.ui["border"])
+        self._apply_windows_style()
 
     def close_app(self) -> None:
         self.closing = True
@@ -431,6 +545,11 @@ class DisplayApp(tk.Tk):
 
 
 def main() -> None:
+    if sys.platform == "win32":
+        try:
+            ctypes.windll.user32.SetProcessDpiAwarenessContext(ctypes.c_void_p(-4))
+        except (AttributeError, OSError):
+            pass
     DisplayApp().mainloop()
 
 

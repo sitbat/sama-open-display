@@ -8,6 +8,8 @@
 - 1568×720 物理横屏画布；编码时转换为设备要求的 720×1568 协议缓冲区；
 - GUI 实时预览与命令行预览导出；
 - 深色/亮色界面、可切换显示主题和 `.samarppkg` 插件导入；
+- 独立插件中心，支持批量安装、启停、卸载、前置依赖和权限查看；
+- 只读系统数据接口，主题可通过数据前置插件获取 CPU、内存、磁盘、网络等指标；
 - Rev-C `EF 69` 协议命令、BGRA 帧和 249/250 字节分块编码；
 - 不依赖 pyserial 的 Windows 原生串口传输层；
 - 单元测试和协议研究记录。
@@ -110,7 +112,7 @@ powershell -ExecutionPolicy Bypass -File scripts\build-windows.ps1 -WithVideo
 SamaRP.exe             主程序入口
 config.toml            可编辑的外部配置
 assets\                应用图标
-themes\                外部主题插件
+plugins\               外部主题与数据前置插件
 README.md              使用说明
 LICENSE
 PROTOCOL.md
@@ -123,9 +125,12 @@ OpenCV；只有使用 `-WithVideo` 时才把视频解码依赖放进 `runtime`�
 
 ## 主题与插件
 
-SamaRP 只使用统一的 `.samarppkg` 插件文件。GUI 中选择“导入主题 / 插件”即可安装；插件保存在主程序旁边的
-`themes` 目录，不会写入 EXE。v1 插件是纯数据主题，不执行第三方脚本、DLL 或 Python 代码。完整清单、版本、
-配色和背景图片约束见 `PLUGIN_SPEC.md`，仓库中的 `themes\sama-grid.samarppkg` 可作为示例。
+SamaRP 只使用统一的 `.samarppkg` 插件文件。“插件中心”支持批量安装、启用、停用和卸载；插件保存在
+主程序旁边的 `plugins` 目录，不会写入 EXE。v1 支持纯数据主题和权限受控的系统数据前置插件，不执行第三方
+脚本、DLL 或 Python 代码。完整清单、依赖、数据权限、配色和背景图片约束见 `PLUGIN_SPEC.md`。
+
+当前 GUI 使用 Windows 原生控件主题，并接入高 DPI、DWM 深色标题栏、圆角和 Windows 11 Mica 属性。协议、
+渲染和插件核心已与界面分层；未来迁移到 WinUI 3 时无需重新实现或重新验证 USB 小屏协议。
 
 项目使用 Python 3.10+、Pillow 和 psutil。Windows 传输层仅使用 Python 标准库 `ctypes`，视频支持使用可选 OpenCV。
 

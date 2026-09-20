@@ -49,10 +49,10 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "PyInstaller failed with exit code $LASTEXITCODE" }
     $ReleaseDir = Join-Path $ProjectRoot 'dist\SamaRP'
     New-Item -ItemType Directory -Force -Path (Join-Path $ReleaseDir 'assets') | Out-Null
-    New-Item -ItemType Directory -Force -Path (Join-Path $ReleaseDir 'themes') | Out-Null
+    New-Item -ItemType Directory -Force -Path (Join-Path $ReleaseDir 'plugins') | Out-Null
     Copy-Item -LiteralPath (Join-Path $ProjectRoot 'assets\app-icon.ico') -Destination (Join-Path $ReleaseDir 'assets\app-icon.ico') -Force
-    Copy-Item -LiteralPath (Join-Path $ProjectRoot 'themes\sama-grid.samarppkg') -Destination (Join-Path $ReleaseDir 'themes\sama-grid.samarppkg') -Force
-    Copy-Item -LiteralPath (Join-Path $ProjectRoot 'themes\README.md') -Destination (Join-Path $ReleaseDir 'themes\README.md') -Force
+    Copy-Item -Path (Join-Path $ProjectRoot 'plugins\*.samarppkg') -Destination (Join-Path $ReleaseDir 'plugins') -Force
+    Copy-Item -LiteralPath (Join-Path $ProjectRoot 'plugins\README.md') -Destination (Join-Path $ReleaseDir 'plugins\README.md') -Force
     Copy-Item -LiteralPath (Join-Path $ProjectRoot 'examples\config.toml') -Destination (Join-Path $ReleaseDir 'config.toml') -Force
     Copy-Item -LiteralPath (Join-Path $ProjectRoot 'README.md') -Destination (Join-Path $ReleaseDir 'README.md') -Force
     Copy-Item -LiteralPath (Join-Path $ProjectRoot 'LICENSE') -Destination (Join-Path $ReleaseDir 'LICENSE') -Force

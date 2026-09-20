@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sama-open-display"
-version = "0.5.0"
+version = "0.6.0"
 description = "SamaRP open-source remastering project for the SAMA 6.5-inch USB display"
 readme = "README.md"
 requires-python = ">=3.10"

@@ -7,3 +7,4 @@ author = "SamaRP contributors"
 kind = "theme"
 entry = "theme.toml"
 description = "四宫格系统状态，适合远距离查看"
+dependencies = ["org.samarpproject.system-metrics"]
