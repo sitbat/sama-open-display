@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page
+    x:Class="SamaRP_WinUI.Pages.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer>
+        <StackPanel Padding="28,20,28,28" Spacing="16">
+            <TextBlock Style="{StaticResource TitleTextBlockStyle}" Text="设置" />
+            <Border Padding="18" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8">
+                <Grid ColumnSpacing="20">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="应用外观" />
+                        <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="跟随系统，或覆盖为亮色/深色。" />
+                    </StackPanel>
+                    <ComboBox x:Name="ThemePicker" Grid.Column="1" Width="150" HorizontalAlignment="Right" SelectedIndex="0" SelectionChanged="ThemePicker_SelectionChanged">
+                        <ComboBoxItem Content="跟随系统" />
+                        <ComboBoxItem Content="亮色" />
+                        <ComboBoxItem Content="深色" />
+                    </ComboBox>
+                </Grid>
+            </Border>
+            <Border Padding="18" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8">
+                <StackPanel Spacing="6">
+                    <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="后端位置" />
+                    <TextBlock x:Name="BackendPath" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    <TextBlock Text="WinUI 负责界面，已验证的 Python 核心负责协议、渲染和插件安全边界。" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

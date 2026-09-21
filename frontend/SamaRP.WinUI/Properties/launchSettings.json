@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "SamaRP.WinUI (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "SamaRP.WinUI (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

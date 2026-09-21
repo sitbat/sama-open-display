@@ -94,6 +94,16 @@ python -m sama_display preview --config examples\config.toml
 
 ## Windows 独立程序
 
+构建新的 WinUI 3 目录式版本：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\build-winui.ps1
+```
+
+输出目录为 `dist\SamaRP-WinUI\`。`SamaRP.exe` 是 WinUI 3 主入口；.NET 和 Windows App SDK
+组件保持为外部 DLL，Python 协议核心位于 `backend`，插件位于 `plugins`。当前 WinUI 迁移阶段开放只读设备
+检测、仪表盘预览、插件批量管理、依赖和权限；硬件写入仍由已验证的经典界面提供。
+
 构建不带视频解码器的轻量版本：
 
 ```powershell

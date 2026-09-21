@@ -16,6 +16,8 @@ from .device import discover_devices
 from .media import iter_media
 from .media import MediaFrame
 from .playback import play_frames
+from .plugin import PluginManager
+from .data_provider import DataService
 from .protocol import display_bitmap_header
 from .render import dashboard_frame, fit_image, hardware_test_card, text_frame
 
@@ -63,6 +65,17 @@ def build_parser() -> argparse.ArgumentParser:
     live.add_argument("--device-id", required=True)
     live.add_argument("--write-hardware", action="store_true")
     sub.add_parser("protocol", help="print inferred full-frame header")
+    plugin_list = sub.add_parser("plugin-list", help="list installed plugins as JSON")
+    plugin_list.add_argument("--directory", type=Path, default=Path("plugins"))
+    plugin_install = sub.add_parser("plugin-install", help="validate and install one or more plugins")
+    plugin_install.add_argument("paths", nargs="+", type=Path)
+    plugin_install.add_argument("--directory", type=Path, default=Path("plugins"))
+    for command in ("plugin-enable", "plugin-disable", "plugin-uninstall"):
+        operation = sub.add_parser(command, help=f"{command.replace('plugin-', '')} one or more plugins")
+        operation.add_argument("ids", nargs="+")
+        operation.add_argument("--directory", type=Path, default=Path("plugins"))
+    metrics = sub.add_parser("metrics", help="read permission-scoped provider data as JSON")
+    metrics.add_argument("--directory", type=Path, default=Path("plugins"))
     return parser
 
 
@@ -74,6 +87,37 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if devices else 1
     if args.command == "protocol":
         print(display_bitmap_header().hex(" ").upper())
+        return 0
+    if args.command.startswith("plugin-") or args.command == "metrics":
+        manager = PluginManager(args.directory)
+        if args.command == "plugin-install":
+            manager.install_many(args.paths)
+        elif args.command == "plugin-enable":
+            manager.set_enabled(args.ids, True)
+        elif args.command == "plugin-disable":
+            manager.set_enabled(args.ids, False)
+        elif args.command == "plugin-uninstall":
+            manager.uninstall(args.ids)
+        if args.command == "metrics":
+            print(json.dumps(DataService(manager.scan()).snapshot(), ensure_ascii=False))
+            return 0
+        inventory = [
+            {
+                "id": item.manifest.plugin_id,
+                "name": item.manifest.name,
+                "version": item.manifest.version,
+                "author": item.manifest.author,
+                "kind": item.manifest.kind,
+                "description": item.manifest.description,
+                "dependencies": list(item.manifest.dependencies),
+                "permissions": list(item.manifest.permissions),
+                "enabled": item.enabled,
+                "problem": item.problem,
+                "path": str(item.path.resolve()),
+            }
+            for item in manager.scan()
+        ]
+        print(json.dumps(inventory, ensure_ascii=False))
         return 0
     if args.command == "media-info":
         frames = []
