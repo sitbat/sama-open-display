@@ -20,6 +20,7 @@ from .plugin import PluginManager
 from .data_provider import DataService
 from .protocol import display_bitmap_header
 from .render import dashboard_frame, fit_image, hardware_test_card, text_frame
+from .theme import discover_themes
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -31,6 +32,8 @@ def build_parser() -> argparse.ArgumentParser:
     preview.add_argument("--text")
     preview.add_argument("--output", type=Path, default=Path("outputs/dashboard.png"))
     preview.add_argument("--config", type=Path)
+    preview.add_argument("--theme-id")
+    preview.add_argument("--plugins-directory", type=Path, default=Path("plugins"))
     animate = sub.add_parser("animate-dashboard", help="render a local animated GIF without touching hardware")
     animate.add_argument("--seconds", type=float, default=3)
     animate.add_argument("--fps", type=float, default=2)
@@ -76,6 +79,8 @@ def build_parser() -> argparse.ArgumentParser:
         operation.add_argument("--directory", type=Path, default=Path("plugins"))
     metrics = sub.add_parser("metrics", help="read permission-scoped provider data as JSON")
     metrics.add_argument("--directory", type=Path, default=Path("plugins"))
+    theme_list = sub.add_parser("theme-list", help="list selectable display themes as JSON")
+    theme_list.add_argument("--directory", type=Path, default=Path("plugins"))
     return parser
 
 
@@ -87,6 +92,20 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if devices else 1
     if args.command == "protocol":
         print(display_bitmap_header().hex(" ").upper())
+        return 0
+    if args.command == "theme-list":
+        manager = PluginManager(args.directory)
+        themes = discover_themes(args.directory, manager.enabled_ids())
+        print(json.dumps([
+            {
+                "id": theme.theme_id,
+                "name": theme.name,
+                "author": theme.author,
+                "description": theme.description,
+                "plugin_id": theme.plugin_id,
+            }
+            for theme in themes
+        ], ensure_ascii=False))
         return 0
     if args.command.startswith("plugin-") or args.command == "metrics":
         manager = PluginManager(args.directory)
@@ -242,7 +261,13 @@ def main(argv: list[str] | None = None) -> int:
     elif args.text:
         frame = text_frame(args.text)
     else:
-        frame = dashboard_frame()
+        manager = PluginManager(args.plugins_directory)
+        themes = discover_themes(args.plugins_directory, manager.enabled_ids())
+        selected = next((theme for theme in themes if theme.theme_id == args.theme_id), None)
+        if args.theme_id and selected is None:
+            raise SystemExit(f"theme is not installed or enabled: {args.theme_id}")
+        data = DataService(manager.scan()).snapshot()
+        frame = dashboard_frame(theme=selected, data=data)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     frame.save(args.output)
     print(args.output.resolve())

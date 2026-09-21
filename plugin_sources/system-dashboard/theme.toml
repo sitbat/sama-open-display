@@ -1,0 +1,18 @@
+[theme]
+id = "system-dashboard"
+name = "系统仪表盘"
+author = "SamaRP contributors"
+description = "时间、CPU、内存、磁盘与系统运行时间"
+
+[display]
+preset = "dashboard"
+
+[palette]
+background = "#07111f"
+surface = "#10243b"
+surface_alt = "#1c3850"
+text = "#eef7ff"
+muted = "#8ba7bd"
+accent = "#32d3a2"
+accent_2 = "#4fb6ff"
+accent_3 = "#b084ff"

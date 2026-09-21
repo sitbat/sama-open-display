@@ -84,6 +84,12 @@ public sealed class BackendService
         return JsonSerializer.Deserialize<List<PluginInfo>>(json) ?? [];
     }
 
+    public async Task<IReadOnlyList<ThemeInfo>> ListThemesAsync()
+    {
+        string json = await RunAsync("theme-list", "--directory", PluginDirectory);
+        return JsonSerializer.Deserialize<List<ThemeInfo>>(json) ?? [];
+    }
+
     public Task InstallPluginsAsync(IEnumerable<string> paths) =>
         RunAsync(["plugin-install", .. paths, "--directory", PluginDirectory]);
 
@@ -108,7 +114,7 @@ public sealed class BackendService
         }
     }
 
-    public async Task<string> RenderPreviewAsync()
+    public async Task<string> RenderPreviewAsync(string? themeId = null)
     {
         string? configuredDataDirectory = Environment.GetEnvironmentVariable("SAMARP_DATA_DIR");
         string dataDirectory = string.IsNullOrWhiteSpace(configuredDataDirectory)
@@ -117,7 +123,13 @@ public sealed class BackendService
         string directory = Path.Combine(dataDirectory, "preview");
         Directory.CreateDirectory(directory);
         string path = Path.Combine(directory, $"dashboard-{Guid.NewGuid():N}.png");
-        await RunAsync("preview", "--output", path);
+        List<string> arguments = ["preview", "--output", path, "--plugins-directory", PluginDirectory];
+        if (!string.IsNullOrWhiteSpace(themeId))
+        {
+            arguments.Add("--theme-id");
+            arguments.Add(themeId);
+        }
+        await RunAsync([.. arguments]);
         return path;
     }
 }
