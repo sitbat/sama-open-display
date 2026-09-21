@@ -15,6 +15,8 @@
 - 不依赖 pyserial 的 Windows 原生串口传输层；
 - 单元测试和协议研究记录。
 
+项目文档入口见 [`docs/README.md`](docs/README.md)，包括项目目标、历次真机验证记录和历史发布说明。
+
 ## 安全状态
 
 默认功能全部是只读检测或本地预览。程序目前不会自动连接、复位或向屏幕写入数据。
@@ -52,10 +54,9 @@ python -m unittest discover -v
 python -m sama_display preview --image D:\Pictures\example.png --output outputs\picture.png
 ```
 
-生成动态仪表盘演示、检查视频解码、检查完整发送计划：
+检查视频解码和完整发送计划：
 
 ```powershell
-python -m sama_display animate-dashboard --seconds 5 --fps 2
 python -m sama_display media-info D:\Videos\demo.mp4 --max-frames 20 --max-fps 10
 python -m sama_display plan --brightness 70
 ```
@@ -158,6 +159,20 @@ SAMA Open Display 只使用统一的 `.sodpkg` 插件文件。“插件中心”
 插件核心与界面保持分层。
 
 项目使用 Python 3.10+、Pillow 和 psutil。Windows 传输层仅使用 Python 标准库 `ctypes`，视频支持使用可选 OpenCV。
+
+## 仓库结构
+
+```text
+frontend/SAMAOpenDisplay.WinUI/   WinUI 3 主界面
+sama_display/                     协议、渲染、插件和硬件后端
+tests/                            自动测试
+examples/                         配置、主题和数据插件示例
+plugins/                          随目录版发布的内置数据插件
+scripts/                          检查与 Windows 构建脚本
+docs/                             项目目标、真机验证和历史发布记录
+outputs/                          本地生成内容（不提交）
+dist/                             本地构建结果（不提交）
+```
 
 ## 动态内容策略
 

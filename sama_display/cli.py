@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-from datetime import datetime, timedelta
 import hashlib
 import json
 from pathlib import Path
@@ -35,10 +34,6 @@ def build_parser() -> argparse.ArgumentParser:
     preview.add_argument("--fit", choices=("cover", "contain"))
     preview.add_argument("--theme-id")
     preview.add_argument("--plugins-directory", type=Path, default=Path("plugins"))
-    animate = sub.add_parser("animate-dashboard", help="render a local animated GIF without touching hardware")
-    animate.add_argument("--seconds", type=float, default=3)
-    animate.add_argument("--fps", type=float, default=2)
-    animate.add_argument("--output", type=Path, default=Path("outputs/dashboard-demo.gif"))
     media = sub.add_parser("media-info", help="decode video frames without touching hardware")
     media.add_argument("path", type=Path)
     media.add_argument("--max-frames", type=int, default=10)
@@ -150,23 +145,6 @@ def main(argv: list[str] | None = None) -> int:
                 break
         print(json.dumps({"path": str(args.path), "decoded_frames": frames}, indent=2))
         return 0 if frames else 1
-    if args.command == "animate-dashboard":
-        if args.seconds <= 0 or not 0 < args.fps <= 30:
-            raise SystemExit("seconds must be positive and fps must be in (0, 30]")
-        count = max(1, round(args.seconds * args.fps))
-        start = datetime.now()
-        frames = [dashboard_frame(start + timedelta(seconds=index / args.fps)) for index in range(count)]
-        args.output.parent.mkdir(parents=True, exist_ok=True)
-        frames[0].save(
-            args.output,
-            save_all=True,
-            append_images=frames[1:],
-            duration=round(1000 / args.fps),
-            loop=0,
-            optimize=True,
-        )
-        print(args.output.resolve())
-        return 0
     if args.command == "plan":
         if args.image:
             with Image.open(args.image) as source:
