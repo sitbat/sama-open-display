@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <Window
-    x:Class="SamaRP_WinUI.MainWindow"
+    x:Class="SAMAOpenDisplay_WinUI.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:local="using:SamaRP_WinUI"
+    xmlns:local="using:SAMAOpenDisplay_WinUI"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    Title="SamaRP"
+    Title="SAMA Open Display"
     mc:Ignorable="d">
     <Window.SystemBackdrop>
         <MicaBackdrop />
@@ -20,8 +20,8 @@
 
         <TitleBar
             x:Name="AppTitleBar"
-            Subtitle="SAMA 开源重制项目"
-            Title="SamaRP"
+            Subtitle="用于给 SAMA 屏幕设备显示自定义内容的开源工具"
+            Title="SAMA Open Display"
             BackRequested="TitleBar_BackRequested"
             IsBackButtonVisible="{x:Bind NavFrame.CanGoBack, Mode=OneWay}"
             IsPaneToggleButtonVisible="True"

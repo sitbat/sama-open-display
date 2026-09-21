@@ -39,7 +39,7 @@ def fit_image(image: Image.Image, size: tuple[int, int] = (WIDTH, HEIGHT), mode:
     return ImageOps.fit(image, size, Image.Resampling.LANCZOS, centering=(0.5, 0.5))
 
 
-def text_frame(text: str, subtitle: str = "SamaRP") -> Image.Image:
+def text_frame(text: str, subtitle: str = "SAMA Open Display") -> Image.Image:
     image = Image.new("RGB", (WIDTH, HEIGHT), BG)
     draw = ImageDraw.Draw(image)
     draw.rounded_rectangle((48, 48, WIDTH - 48, HEIGHT - 48), radius=32, fill=PANEL)

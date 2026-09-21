@@ -1,4 +1,4 @@
-# SamaRP 0.9.0 Continuous Dashboard Preview
+# SAMA Open Display 0.9.0 Continuous Dashboard Preview
 
 ## Changes
 

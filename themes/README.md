@@ -1,6 +1,6 @@
 # SAMA display themes
 
-The application imports portable `.samarppkg` plugins. A theme plugin is a ZIP
+The application imports portable `.sodpkg` plugins. A theme plugin is a ZIP
 archive whose root contains `manifest.toml`, `theme.toml`, and optionally one
 background image.
 

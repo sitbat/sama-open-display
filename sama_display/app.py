@@ -1,4 +1,4 @@
-"""Windows desktop UI for SamaRP."""
+"""Classic Windows desktop UI for SAMA Open Display."""
 
 from __future__ import annotations
 
@@ -48,7 +48,7 @@ class DisplayApp(tk.Tk):
     def __init__(self):
         super().__init__()
         self.config_data = self._load_config()
-        self.title(f"SamaRP  {__version__}")
+        self.title(f"SAMA Open Display  {__version__}")
         self.geometry("1240x790")
         self.minsize(1060, 680)
 
@@ -146,8 +146,8 @@ class DisplayApp(tk.Tk):
         root.pack(fill="both", expand=True)
         header = ttk.Frame(root, style="App.TFrame")
         header.pack(fill="x", pady=(0, 14))
-        ttk.Label(header, text="SamaRP", style="Title.TLabel").pack(side="left")
-        ttk.Label(header, text="SAMA 开源重制项目 · USB 小屏控制器", style="Sub.TLabel").pack(side="left", padx=(14, 0), pady=(8, 0))
+        ttk.Label(header, text="SAMA Open Display", style="Title.TLabel").pack(side="left")
+        ttk.Label(header, text="用于给 SAMA 屏幕设备显示自定义内容的开源工具", style="Sub.TLabel").pack(side="left", padx=(14, 0), pady=(8, 0))
         ttk.Label(header, text=f"v{__version__}", style="Sub.TLabel").pack(side="right", pady=(8, 0))
         self.appearance_button = ttk.Button(header, text="☀  亮色", command=self.toggle_appearance)
         self.appearance_button.pack(side="right", padx=(0, 12))
@@ -341,7 +341,7 @@ class DisplayApp(tk.Tk):
         dialog.transient(self)
         entry = tk.Text(dialog, font=("Microsoft YaHei UI", 14), wrap="word")
         entry.pack(fill="both", expand=True, padx=14, pady=14)
-        entry.insert("1.0", "你好，SamaRP")
+        entry.insert("1.0", "你好，SAMA Open Display")
         def apply():
             value = entry.get("1.0", "end").strip()
             if value:
@@ -471,7 +471,7 @@ class DisplayApp(tk.Tk):
         return list(self.plugin_table.selection())
 
     def install_plugins(self) -> None:
-        paths = filedialog.askopenfilenames(filetypes=[("SamaRP 插件", "*.samarppkg")])
+        paths = filedialog.askopenfilenames(filetypes=[("SAMA Open Display 插件", "*.sodpkg")])
         if not paths:
             return
         try:

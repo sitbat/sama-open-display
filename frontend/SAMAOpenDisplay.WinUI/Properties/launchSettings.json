@@ -1,9 +1,9 @@
 {
   "profiles": {
-    "SamaRP.WinUI (Package)": {
+    "SAMAOpenDisplay.WinUI (Package)": {
       "commandName": "MsixPackage"
     },
-    "SamaRP.WinUI (Unpackaged)": {
+    "SAMAOpenDisplay.WinUI (Unpackaged)": {
       "commandName": "Project"
     }
   }

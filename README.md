@@ -1,13 +1,13 @@
-# SamaRP
+# SAMA Open Display
 
-**SAMA Remastering Project（SAMA 开源重制项目）**，面向 SAMA 6.5 英寸 USB 小屏
-（720×1568）的开源替代控制器。目前已完成：
+用于给 SAMA 屏幕设备显示自定义内容的开源工具。目前主要适配 SAMA 6.5 英寸 USB 小屏
+（720×1568）。本项目是非官方社区工具，与 SAMA 品牌方不存在隶属、授权或背书关系。目前已完成：
 
 - 自动识别 `VID_1D6B&PID_A065` 主显示串口及 `VID_1A86&PID_CA65` 辅助设备；
 - 真机 HELLO 已验证，设备标识为 `chs_65inch.dev1_rom1.91`；
 - 1568×720 物理横屏画布；编码时转换为设备要求的 720×1568 协议缓冲区；
 - GUI 实时预览与命令行预览导出；
-- 深色/亮色界面、可切换显示主题和 `.samarppkg` 插件导入；
+- 深色/亮色界面、可切换显示主题和 `.sodpkg` 插件导入；
 - 独立插件中心，支持批量安装、启停、卸载、前置依赖和权限查看；
 - 只读系统数据接口，主题可通过数据前置插件获取 CPU、内存、磁盘、网络等指标；
 - Rev-C `EF 69` 协议命令、BGRA 帧和 249/250 字节分块编码；
@@ -100,7 +100,7 @@ python -m sama_display preview --config examples\config.toml
 powershell -ExecutionPolicy Bypass -File scripts\build-winui.ps1
 ```
 
-输出目录为 `dist\SamaRP-WinUI\`。`SamaRP.exe` 是 WinUI 3 主入口；.NET 和 Windows App SDK
+输出目录为 `dist\SAMA-Open-Display-WinUI\`。`SAMAOpenDisplay.exe` 是 WinUI 3 主入口；.NET 和 Windows App SDK
 组件保持为外部 DLL，Python 协议核心位于 `backend`，插件位于 `plugins`。当前 WinUI 迁移阶段开放设备
 检测、仪表盘预览、插件批量管理、依赖和权限，以及带双重安全门的一次性画面发送。
 
@@ -126,10 +126,10 @@ powershell -ExecutionPolicy Bypass -File scripts\build-windows.ps1
 powershell -ExecutionPolicy Bypass -File scripts\build-windows.ps1 -WithVideo
 ```
 
-输出目录为 `dist\SamaRP\`：
+输出目录为 `dist\SAMA-Open-Display\`：
 
 ```text
-SamaRP.exe             主程序入口
+SAMAOpenDisplay.exe    主程序入口
 config.toml            可编辑的外部配置
 assets\                应用图标
 plugins\               外部主题与数据前置插件
@@ -145,7 +145,7 @@ OpenCV；只有使用 `-WithVideo` 时才把视频解码依赖放进 `runtime`�
 
 ## 主题与插件
 
-SamaRP 只使用统一的 `.samarppkg` 插件文件。“插件中心”支持批量安装、启用、停用和卸载；插件保存在
+SAMA Open Display 只使用统一的 `.sodpkg` 插件文件。“插件中心”支持批量安装、启用、停用和卸载；插件保存在
 主程序旁边的 `plugins` 目录，不会写入 EXE。v1 支持纯数据主题和权限受控的系统数据前置插件，不执行第三方
 脚本、DLL 或 Python 代码。完整清单、依赖、数据权限、配色和背景图片约束见 `PLUGIN_SPEC.md`。
 

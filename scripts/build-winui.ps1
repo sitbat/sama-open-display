@@ -3,10 +3,10 @@ param()
 $ErrorActionPreference = 'Stop'
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
 $Python = Join-Path $ProjectRoot '.venv\Scripts\python.exe'
-$FrontendProject = Join-Path $ProjectRoot 'frontend\SamaRP.WinUI\SamaRP.WinUI.csproj'
-$FrontendBuild = Join-Path $ProjectRoot 'frontend\SamaRP.WinUI\bin\Release\net10.0-windows10.0.26100.0\win-x64'
-$BackendBuild = Join-Path $ProjectRoot 'dist\SamaRP.Backend'
-$ReleaseDir = Join-Path $ProjectRoot 'dist\SamaRP-WinUI'
+$FrontendProject = Join-Path $ProjectRoot 'frontend\SAMAOpenDisplay.WinUI\SAMAOpenDisplay.WinUI.csproj'
+$FrontendBuild = Join-Path $ProjectRoot 'frontend\SAMAOpenDisplay.WinUI\bin\Release\net10.0-windows10.0.26100.0\win-x64'
+$BackendBuild = Join-Path $ProjectRoot 'dist\SAMAOpenDisplay.Backend'
+$ReleaseDir = Join-Path $ProjectRoot 'dist\SAMA-Open-Display-WinUI'
 
 Push-Location $ProjectRoot
 try {
@@ -19,7 +19,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "Python tests failed with exit code $LASTEXITCODE" }
 
     & $Python -m PyInstaller --noconfirm --clean --console --onedir `
-        --contents-directory runtime --name SamaRP.Backend `
+        --contents-directory runtime --name SAMAOpenDisplay.Backend `
         --exclude-module cv2 --exclude-module tkinter run_backend.py
     if ($LASTEXITCODE -ne 0) { throw "Backend build failed with exit code $LASTEXITCODE" }
 
@@ -32,8 +32,8 @@ try {
     & dotnet build $FrontendProject -c Release -r win-x64 --self-contained true -p:RestoreIgnoreFailedSources=true
     if ($LASTEXITCODE -ne 0) { throw "WinUI build failed with exit code $LASTEXITCODE" }
 
-    if (-not (Test-Path -LiteralPath (Join-Path $FrontendBuild 'SamaRP.pri'))) {
-        throw "WinUI resource index was not generated: $FrontendBuild\SamaRP.pri"
+    if (-not (Test-Path -LiteralPath (Join-Path $FrontendBuild 'SAMAOpenDisplay.pri'))) {
+        throw "WinUI resource index was not generated: $FrontendBuild\SAMAOpenDisplay.pri"
     }
     if (Test-Path -LiteralPath $ReleaseDir) {
         Remove-Item -LiteralPath $ReleaseDir -Recurse -Force
@@ -51,8 +51,8 @@ try {
     Copy-Item -LiteralPath (Join-Path $ProjectRoot 'LICENSE') -Destination (Join-Path $ReleaseDir 'LICENSE') -Force
     Copy-Item -LiteralPath (Join-Path $ProjectRoot 'PROTOCOL.md') -Destination (Join-Path $ReleaseDir 'PROTOCOL.md') -Force
     Copy-Item -LiteralPath (Join-Path $ProjectRoot 'PLUGIN_SPEC.md') -Destination (Join-Path $ReleaseDir 'PLUGIN_SPEC.md') -Force
-    Write-Host "Built WinUI frontend: $ReleaseDir\SamaRP.exe"
-    Write-Host "External backend: $BackendDestination\SamaRP.Backend.exe"
+    Write-Host "Built WinUI frontend: $ReleaseDir\SAMAOpenDisplay.exe"
+    Write-Host "External backend: $BackendDestination\SAMAOpenDisplay.Backend.exe"
 } finally {
     Pop-Location
 }

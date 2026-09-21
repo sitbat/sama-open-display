@@ -1,6 +1,7 @@
-# SamaRP 0.5.0
+# SAMA Open Display 0.5.0
 
-SAMA Open Display is now **SamaRP — SAMA Remastering Project**.
+SAMA Open Display is an open-source tool for displaying custom content on
+compatible SAMA screen devices. It is an unofficial community project.
 
 ## Highlights
 
@@ -8,7 +9,7 @@ SAMA Open Display is now **SamaRP — SAMA Remastering Project**.
 - New SAMA horse-head application icon with an open-source badge.
 - Importable display themes with live 1568×720 preview.
 - Three built-in layouts: dashboard, minimal clock, and system grid.
-- `.samarppkg` plugin specification v1 with manifest, semantic version, plugin
+- `.sodpkg` plugin specification v1 with manifest, semantic version, plugin
   identity, validation, and data-only security boundary.
 - Example `SAMA 网格` theme plugin included outside the executable.
 - Directory-based Windows package: configuration, plugins, assets, docs, DLLs,
@@ -20,5 +21,5 @@ SAMA Open Display is now **SamaRP — SAMA Remastering Project**.
 - Windows GUI launch verified under Windows 11.
 - Hardware writes remain confirmation-gated and device-identity checked.
 
-Windows archive: `SamaRP-0.5.0-Windows-x64.zip`  
+Windows archive: `SAMA-Open-Display-0.5.0-Windows-x64.zip`
 SHA-256: `6A9BE623490D44132190401A664E656CBBEFC9768C5F211C96C3A3B705B01079`

@@ -12,7 +12,7 @@ MANIFEST = b'''[plugin]\nschema=1\nid="org.test.blue"\nname="Test Blue"\nversion
 
 class ThemeTests(unittest.TestCase):
     def _package(self, directory: Path, data=THEME) -> Path:
-        path = directory / "source.samarppkg"
+        path = directory / "source.sodpkg"
         with zipfile.ZipFile(path, "w") as package:
             package.writestr("manifest.toml", MANIFEST)
             package.writestr("theme.toml", data)
@@ -29,7 +29,7 @@ class ThemeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             installed = install_theme(self._package(root), root / "installed")
-            self.assertEqual(installed.source.name, "test-blue.samarppkg")
+            self.assertEqual(installed.source.name, "test-blue.sodpkg")
             self.assertTrue(installed.source.exists())
 
     def test_discovery_always_has_builtins(self):

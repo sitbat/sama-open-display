@@ -1,4 +1,4 @@
-# SamaRP 0.6.0
+# SAMA Open Display 0.6.0
 
 ## Highlights
 
@@ -24,6 +24,6 @@ adapters and explicit permissions.
 - 48 unit tests pass; one optional OpenCV test is skipped in the lightweight build.
 - Source GUI startup verified on Windows 11.
 
-Windows archive: `SamaRP-0.6.0-Windows-x64.zip`
+Windows archive: `SAMA-Open-Display-0.6.0-Windows-x64.zip`
 
 SHA-256: `056E9D29CBFE10A4221171069A0BFE54B9A62D7F3C13B6AD58496E80A8D813E1`

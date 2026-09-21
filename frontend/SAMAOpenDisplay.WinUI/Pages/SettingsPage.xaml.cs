@@ -1,8 +1,8 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using SamaRP_WinUI.Services;
+using SAMAOpenDisplay_WinUI.Services;
 
-namespace SamaRP_WinUI.Pages;
+namespace SAMAOpenDisplay_WinUI.Pages;
 
 public sealed partial class SettingsPage : Page
 {

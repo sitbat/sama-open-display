@@ -15,8 +15,8 @@
   <mp:PhoneIdentity PhoneProductId="9CACE45E-8EEF-4E63-A706-03BDA28E40AD" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
-    <DisplayName>SamaRP</DisplayName>
-    <PublisherDisplayName>SamaRP contributors</PublisherDisplayName>
+    <DisplayName>SAMA Open Display</DisplayName>
+    <PublisherDisplayName>SAMA Open Display contributors</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
 
@@ -34,8 +34,8 @@
       Executable="$targetnametoken$.exe"
       EntryPoint="$targetentrypoint$">
       <uap:VisualElements
-        DisplayName="SamaRP"
-        Description="SAMA 开源重制项目"
+        DisplayName="SAMA Open Display"
+        Description="用于给 SAMA 屏幕设备显示自定义内容的开源工具"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png">

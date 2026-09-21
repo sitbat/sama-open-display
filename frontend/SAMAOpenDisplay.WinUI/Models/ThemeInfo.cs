@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace SamaRP_WinUI.Models;
+namespace SAMAOpenDisplay_WinUI.Models;
 
 public sealed class ThemeInfo
 {

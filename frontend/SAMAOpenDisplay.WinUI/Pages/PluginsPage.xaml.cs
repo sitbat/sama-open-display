@@ -1,11 +1,11 @@
 using System.Collections.ObjectModel;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using SamaRP_WinUI.Models;
-using SamaRP_WinUI.Services;
+using SAMAOpenDisplay_WinUI.Models;
+using SAMAOpenDisplay_WinUI.Services;
 using Windows.Storage.Pickers;
 
-namespace SamaRP_WinUI.Pages;
+namespace SAMAOpenDisplay_WinUI.Pages;
 
 public sealed partial class PluginsPage : Page
 {
@@ -48,7 +48,7 @@ public sealed partial class PluginsPage : Page
     private async void Install_Click(object sender, RoutedEventArgs e)
     {
         FileOpenPicker picker = new();
-        picker.FileTypeFilter.Add(".samarppkg");
+        picker.FileTypeFilter.Add(".sodpkg");
         picker.SuggestedStartLocation = PickerLocationId.Downloads;
         nint hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
         WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);

@@ -2,11 +2,11 @@ using System.Collections.ObjectModel;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
-using SamaRP_WinUI.Services;
-using SamaRP_WinUI.Models;
+using SAMAOpenDisplay_WinUI.Services;
+using SAMAOpenDisplay_WinUI.Models;
 using Windows.Storage;
 
-namespace SamaRP_WinUI.Pages;
+namespace SAMAOpenDisplay_WinUI.Pages;
 
 public sealed partial class HomePage : Page
 {

@@ -1,4 +1,4 @@
-# SamaRP 0.7.0 WinUI Preview
+# SAMA Open Display 0.7.0 WinUI Preview
 
 ## Highlights
 

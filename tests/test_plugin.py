@@ -17,7 +17,7 @@ class PluginTests(unittest.TestCase):
     def test_inspects_theme_plugin(self):
         manifest = b'''[plugin]\nschema=1\nid="org.test.theme"\nname="Theme"\nversion="1.2.0"\nauthor="Tests"\nkind="theme"\nentry="theme.toml"\n'''
         with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "test.samarppkg"
+            path = Path(tmp) / "test.sodpkg"
             with zipfile.ZipFile(path, "w") as package:
                 package.writestr("manifest.toml", manifest)
                 package.writestr("theme.toml", b'[theme]\nid="test-theme"\nname="Test"\n')
@@ -28,8 +28,8 @@ class PluginTests(unittest.TestCase):
     def test_batch_state_respects_dependencies(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            provider = root / "provider.samarppkg"
-            theme = root / "theme.samarppkg"
+            provider = root / "provider.sodpkg"
+            theme = root / "theme.sodpkg"
             self._package(provider, "org.test.provider")
             self._package(theme, "org.test.consumer", dependencies=("org.test.provider",))
             manager = PluginManager(root / "installed")

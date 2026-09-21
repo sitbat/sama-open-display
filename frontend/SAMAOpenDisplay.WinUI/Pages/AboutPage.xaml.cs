@@ -1,6 +1,6 @@
 using Microsoft.UI.Xaml.Controls;
 
-namespace SamaRP_WinUI.Pages;
+namespace SAMAOpenDisplay_WinUI.Pages;
 
 public sealed partial class AboutPage : Page
 {

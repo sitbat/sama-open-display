@@ -1,4 +1,4 @@
-"""Portable display themes supplied by SamaRP plugin packages."""
+"""Portable display themes supplied by SAMA Open Display plugin packages."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ _COLOR = re.compile(r"^#[0-9a-fA-F]{6}$")
 class DisplayTheme:
     theme_id: str
     name: str
-    author: str = "SamaRP contributors"
+    author: str = "SAMA Open Display contributors"
     description: str = ""
     preset: str = "dashboard"
     background: str = "#07111f"

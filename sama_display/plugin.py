@@ -1,4 +1,4 @@
-"""Validation, installation and state management for SamaRP plugins."""
+"""Validation, installation and state management for SAMA Open Display plugins."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ except ModuleNotFoundError:  # Python 3.10
     import tomli as tomllib
 
 
-PLUGIN_EXTENSION = ".samarppkg"
+PLUGIN_EXTENSION = ".sodpkg"
 PLUGIN_KINDS = {"theme", "data-provider"}
 KNOWN_PERMISSIONS = {
     "system.cpu", "system.memory", "system.uptime", "storage.usage",

@@ -1,9 +1,9 @@
 [plugin]
 schema = 1
-id = "org.samarpproject.system-metrics"
+id = "io.github.sitbat.sama-open-display.system-metrics"
 name = "系统指标接口"
 version = "1.0.0"
-author = "SamaRP contributors"
+author = "SAMA Open Display contributors"
 kind = "data-provider"
 entry = "provider.toml"
 description = "向主题提供只读 CPU、内存、运行时间、磁盘、网络和进程统计"

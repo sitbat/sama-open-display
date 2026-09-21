@@ -35,7 +35,7 @@ try {
     $PyInstallerArgs = @(
         '--noconfirm', '--clean', '--windowed', '--onedir',
         '--contents-directory', 'runtime',
-        '--name', 'SamaRP',
+        '--name', 'SAMAOpenDisplay',
         '--icon', 'assets\app-icon.ico',
         '--exclude-module', 'pytest'
     )
@@ -47,18 +47,18 @@ try {
     $PyInstallerArgs += 'run_gui.py'
     & $Python -m PyInstaller @PyInstallerArgs
     if ($LASTEXITCODE -ne 0) { throw "PyInstaller failed with exit code $LASTEXITCODE" }
-    $ReleaseDir = Join-Path $ProjectRoot 'dist\SamaRP'
+    $ReleaseDir = Join-Path $ProjectRoot 'dist\SAMA-Open-Display'
     New-Item -ItemType Directory -Force -Path (Join-Path $ReleaseDir 'assets') | Out-Null
     New-Item -ItemType Directory -Force -Path (Join-Path $ReleaseDir 'plugins') | Out-Null
     Copy-Item -LiteralPath (Join-Path $ProjectRoot 'assets\app-icon.ico') -Destination (Join-Path $ReleaseDir 'assets\app-icon.ico') -Force
-    Copy-Item -Path (Join-Path $ProjectRoot 'plugins\*.samarppkg') -Destination (Join-Path $ReleaseDir 'plugins') -Force
+    Copy-Item -Path (Join-Path $ProjectRoot 'plugins\*.sodpkg') -Destination (Join-Path $ReleaseDir 'plugins') -Force
     Copy-Item -LiteralPath (Join-Path $ProjectRoot 'plugins\README.md') -Destination (Join-Path $ReleaseDir 'plugins\README.md') -Force
     Copy-Item -LiteralPath (Join-Path $ProjectRoot 'examples\config.toml') -Destination (Join-Path $ReleaseDir 'config.toml') -Force
     Copy-Item -LiteralPath (Join-Path $ProjectRoot 'README.md') -Destination (Join-Path $ReleaseDir 'README.md') -Force
     Copy-Item -LiteralPath (Join-Path $ProjectRoot 'LICENSE') -Destination (Join-Path $ReleaseDir 'LICENSE') -Force
     Copy-Item -LiteralPath (Join-Path $ProjectRoot 'PROTOCOL.md') -Destination (Join-Path $ReleaseDir 'PROTOCOL.md') -Force
     Copy-Item -LiteralPath (Join-Path $ProjectRoot 'PLUGIN_SPEC.md') -Destination (Join-Path $ReleaseDir 'PLUGIN_SPEC.md') -Force
-    Write-Host "Built: $ReleaseDir\SamaRP.exe"
+    Write-Host "Built: $ReleaseDir\SAMAOpenDisplay.exe"
     Write-Host "Dependencies: $ReleaseDir\runtime"
 } finally {
     Pop-Location

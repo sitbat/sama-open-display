@@ -1,4 +1,4 @@
-# SamaRP 0.8.0 WinUI Hardware Gate
+# SAMA Open Display 0.8.0 WinUI Hardware Gate
 
 ## Changes
 

@@ -1,8 +1,8 @@
 using System.Diagnostics;
 using System.Text.Json;
-using SamaRP_WinUI.Models;
+using SAMAOpenDisplay_WinUI.Models;
 
-namespace SamaRP_WinUI.Services;
+namespace SAMAOpenDisplay_WinUI.Services;
 
 public sealed class BackendService
 {
@@ -16,7 +16,7 @@ public sealed class BackendService
 
     private BackendService()
     {
-        string bundledBackend = Path.Combine(AppContext.BaseDirectory, "backend", "SamaRP.Backend.exe");
+        string bundledBackend = Path.Combine(AppContext.BaseDirectory, "backend", "SAMAOpenDisplay.Backend.exe");
         if (File.Exists(bundledBackend))
         {
             RootDirectory = AppContext.BaseDirectory;
@@ -37,7 +37,7 @@ public sealed class BackendService
 
     private static string LocateBackendRoot()
     {
-        string? configured = Environment.GetEnvironmentVariable("SAMARP_BACKEND_ROOT");
+        string? configured = Environment.GetEnvironmentVariable("SAMA_OPEN_DISPLAY_BACKEND_ROOT");
         if (!string.IsNullOrWhiteSpace(configured) && Directory.Exists(configured))
             return Path.GetFullPath(configured);
         DirectoryInfo? directory = new(AppContext.BaseDirectory);
@@ -54,7 +54,7 @@ public sealed class BackendService
     private async Task<string> RunAsync(params string[] arguments)
     {
         if (!File.Exists(PythonExecutable))
-            throw new InvalidOperationException($"找不到 SamaRP 后端：{PythonExecutable}");
+            throw new InvalidOperationException($"找不到 SAMA Open Display 后端：{PythonExecutable}");
         ProcessStartInfo start = new(PythonExecutable)
         {
             WorkingDirectory = RootDirectory,
@@ -70,7 +70,7 @@ public sealed class BackendService
         }
         foreach (string argument in arguments)
             start.ArgumentList.Add(argument);
-        using Process process = Process.Start(start) ?? throw new InvalidOperationException("无法启动 SamaRP 后端");
+        using Process process = Process.Start(start) ?? throw new InvalidOperationException("无法启动 SAMA Open Display 后端");
         string output = await process.StandardOutput.ReadToEndAsync();
         string error = await process.StandardError.ReadToEndAsync();
         await process.WaitForExitAsync();
@@ -171,9 +171,9 @@ public sealed class BackendService
 
     private static string GetDataDirectory()
     {
-        string? configuredDataDirectory = Environment.GetEnvironmentVariable("SAMARP_DATA_DIR");
+        string? configuredDataDirectory = Environment.GetEnvironmentVariable("SAMA_OPEN_DISPLAY_DATA_DIR");
         return string.IsNullOrWhiteSpace(configuredDataDirectory)
-            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SamaRP")
+            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SAMA Open Display")
             : Path.GetFullPath(configuredDataDirectory);
     }
 

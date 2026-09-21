@@ -1,4 +1,4 @@
-# SamaRP 0.7.2 Stable Theme Picker
+# SAMA Open Display 0.7.2 Stable Theme Picker
 
 ## Changes
 

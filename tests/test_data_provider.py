@@ -12,7 +12,7 @@ class DataProviderTests(unittest.TestCase):
         manifest = b'''[plugin]\nschema=1\nid="org.test.metrics"\nname="Metrics"\nversion="1.0.0"\nauthor="Tests"\nkind="data-provider"\nentry="provider.toml"\npermissions=["system.cpu","system.uptime"]\n'''
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            source = root / "provider.samarppkg"
+            source = root / "provider.sodpkg"
             with zipfile.ZipFile(source, "w") as package:
                 package.writestr("manifest.toml", manifest)
                 package.writestr("provider.toml", b'[provider]\nadapter="builtin.system"\n')

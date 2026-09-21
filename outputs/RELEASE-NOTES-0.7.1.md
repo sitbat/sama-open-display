@@ -1,4 +1,4 @@
-# SamaRP 0.7.1 Theme Selector
+# SAMA Open Display 0.7.1 Theme Selector
 
 ## Changes
 
@@ -7,7 +7,7 @@
 - Adds a native WinUI theme selector with immediate preview refresh.
 - Exposes enabled themes through the backend `theme-list` JSON command.
 - Packages `系统仪表盘` as the preinstalled
-  `org.samarpproject.system-dashboard` theme plugin.
+  `io.github.sitbat.sama-open-display.system-dashboard` theme plugin.
 - Declares the system dashboard's dependency on the read-only system metrics
   provider.
 - Removes the SAMA Grid theme from the preinstalled plugin set.

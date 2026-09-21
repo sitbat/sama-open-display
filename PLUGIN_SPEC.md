@@ -1,12 +1,12 @@
-# SamaRP Plugin Specification v1
+# SAMA Open Display Plugin Specification v1
 
-SamaRP plugins are declarative ZIP packages using the `.samarppkg` extension.
+SAMA Open Display plugins are declarative ZIP packages using the `.sodpkg` extension.
 They are external files and are never embedded in the main executable.
 
 ## Package layout
 
 ```text
-example.samarppkg
+example.sodpkg
 ├── manifest.toml
 ├── theme.toml
 └── background.png       # optional
@@ -24,13 +24,13 @@ author = "Example author"
 kind = "theme"
 entry = "theme.toml"
 description = "A bright four-card system monitor"
-dependencies = ["org.samarpproject.system-metrics"]
+dependencies = ["io.github.sitbat.sama-open-display.system-metrics"]
 permissions = []
 ```
 
 Plugin IDs are stable lowercase identifiers. Versions follow semantic
 versioning. Version 1 supports `theme` and `data-provider`. Both are
-declarative: SamaRP does not execute Python, DLLs, scripts, or commands from a
+declarative: SAMA Open Display does not execute Python, DLLs, scripts, or commands from a
 package.
 
 ## Dependencies and data providers
