@@ -16,13 +16,67 @@
                         <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="应用外观" />
                         <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="跟随系统，或覆盖为亮色/深色。" />
                     </StackPanel>
-                    <ComboBox x:Name="ThemePicker" Grid.Column="1" Width="150" HorizontalAlignment="Right" SelectedIndex="0" SelectionChanged="ThemePicker_SelectionChanged">
+                    <ComboBox x:Name="ThemePicker" Grid.Column="1" Width="150" HorizontalAlignment="Right" SelectionChanged="ThemePicker_SelectionChanged">
                         <ComboBoxItem Content="跟随系统" />
                         <ComboBoxItem Content="亮色" />
                         <ComboBoxItem Content="深色" />
                     </ComboBox>
                 </Grid>
             </Border>
+            <TextBlock Margin="0,8,0,0" Style="{StaticResource SubtitleTextBlockStyle}" Text="启动与后台" />
+            <Border Padding="18" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8">
+                <Grid ColumnSpacing="20">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock FontWeight="SemiBold" Text="开机自动启动" />
+                        <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="登录 Windows 后自动运行，不需要管理员权限。" />
+                    </StackPanel>
+                    <ToggleSwitch x:Name="StartupToggle" Grid.Column="1" Toggled="StartupToggle_Toggled" />
+                </Grid>
+            </Border>
+            <Border Padding="18" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8">
+                <Grid ColumnSpacing="20">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock FontWeight="SemiBold" Text="开机启动后隐藏到后台" />
+                        <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="由 Windows 自动启动时不显示主窗口，仅保留系统托盘图标。" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <ToggleSwitch x:Name="StartMinimizedToggle" Grid.Column="1" Toggled="BackgroundToggle_Toggled" />
+                </Grid>
+            </Border>
+            <Border Padding="18" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8">
+                <Grid ColumnSpacing="20">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock FontWeight="SemiBold" Text="最小化到系统托盘" />
+                        <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="点击最小化按钮时隐藏任务栏窗口，继续在后台运行。" />
+                    </StackPanel>
+                    <ToggleSwitch x:Name="MinimizeToTrayToggle" Grid.Column="1" Toggled="BackgroundToggle_Toggled" />
+                </Grid>
+            </Border>
+            <Border Padding="18" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8">
+                <Grid ColumnSpacing="20">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock FontWeight="SemiBold" Text="关闭时隐藏到系统托盘" />
+                        <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="点击关闭按钮时继续后台运行；可通过托盘菜单彻底退出。" />
+                    </StackPanel>
+                    <ToggleSwitch x:Name="CloseToTrayToggle" Grid.Column="1" Toggled="BackgroundToggle_Toggled" />
+                </Grid>
+            </Border>
+            <InfoBar x:Name="SettingsStatus" IsOpen="False" IsClosable="True" />
             <Border Padding="18" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8">
                 <StackPanel Spacing="6">
                     <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="后端位置" />
