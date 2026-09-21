@@ -71,9 +71,16 @@ public sealed class BackendService
         foreach (string argument in arguments)
             start.ArgumentList.Add(argument);
         using Process process = Process.Start(start) ?? throw new InvalidOperationException("无法启动 SAMA Open Display 后端");
-        string output = await process.StandardOutput.ReadToEndAsync();
-        string error = await process.StandardError.ReadToEndAsync();
+
+        // Drain both redirected pipes concurrently. The live dashboard writes
+        // one progress line per frame to stderr; waiting for stdout to close
+        // before reading stderr eventually fills the Windows pipe and blocks
+        // the backend, which also stops subsequent USB frame writes.
+        Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
+        Task<string> errorTask = process.StandardError.ReadToEndAsync();
         await process.WaitForExitAsync();
+        string output = await outputTask;
+        string error = await errorTask;
         if (process.ExitCode != 0)
             throw new InvalidOperationException(string.IsNullOrWhiteSpace(error) ? output.Trim() : error.Trim());
         return output.Trim();
