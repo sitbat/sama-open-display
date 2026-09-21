@@ -219,7 +219,7 @@ class DisplayApp(tk.Tk):
         ttk.Label(panel, text="硬件操作", style="PanelTitle.TLabel").pack(anchor="w", pady=(0, 9))
         self.send_button = ttk.Button(panel, text="发送当前画面", style="Accent.TButton", command=self.confirm_send)
         self.send_button.pack(fill="x", pady=4)
-        self.live_button = ttk.Button(panel, text="开始持续仪表盘", command=self.toggle_live_dashboard)
+        self.live_button = ttk.Button(panel, text="开始持续发送画面", command=self.toggle_live_dashboard)
         self.live_button.pack(fill="x", pady=4)
         ttk.Label(panel, text="持续模式使用已验证的全帧协议，每秒最多发送一帧。", style="PanelText.TLabel", wraplength=210, justify="left").pack(anchor="w", pady=(10, 0))
         ttk.Separator(panel).pack(fill="x", pady=18)
@@ -368,7 +368,7 @@ class DisplayApp(tk.Tk):
 
     def confirm_send(self) -> None:
         if self.hardware_thread and self.hardware_thread.is_alive():
-            messagebox.showinfo("设备正在使用", "请先停止持续仪表盘。")
+            messagebox.showinfo("设备正在使用", "请先停止持续发送画面。")
             return
         if not self._confirm_hardware():
             return
@@ -404,7 +404,7 @@ class DisplayApp(tk.Tk):
         self.hardware_brightness = int(self.brightness.get())
         self.hardware_stop.clear()
         self._controls(False, live=True)
-        self.live_button.configure(text="停止持续仪表盘", state="normal")
+        self.live_button.configure(text="停止持续发送画面", state="normal")
         self.hardware_thread = threading.Thread(target=self._live_worker, daemon=True)
         self.hardware_thread.start()
 
@@ -441,7 +441,7 @@ class DisplayApp(tk.Tk):
     def _live_finished(self, frames, elapsed) -> None:
         self.hardware_stop.clear()
         self._controls(True)
-        self.live_button.configure(text="开始持续仪表盘")
+        self.live_button.configure(text="开始持续发送画面")
         if not self.status_text.get().startswith("硬件操作失败"):
             self.status_text.set(f"持续显示已停止：{frames} 帧 / {elapsed:.1f} 秒；COM 端口已关闭")
 

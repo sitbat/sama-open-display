@@ -40,6 +40,7 @@ class CliTests(unittest.TestCase):
         ])
         self.assertEqual(args.theme_id, "minimal")
         self.assertEqual(args.stop_file, Path("stop.signal"))
+        self.assertEqual(args.interval, 1.0)
 
 
 if __name__ == "__main__":

@@ -15,5 +15,5 @@ reconnect_attempts = 3
 
 [content]
 mode = "dashboard"
-fps = 2.0
+fps = 1.0
 fit = "cover"

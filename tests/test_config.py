@@ -11,6 +11,7 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual((config.display.width, config.display.height), (1568, 720))
         self.assertEqual(config.display.panel_rotation, 90)
         self.assertEqual(config.connection.port, "auto")
+        self.assertEqual(config.content.fps, 1.0)
 
     def test_load_and_validate(self):
         content = b"[display]\nbrightness=42\n[content]\nfps=5\nfit='contain'\n"

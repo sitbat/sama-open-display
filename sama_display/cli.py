@@ -63,7 +63,7 @@ def build_parser() -> argparse.ArgumentParser:
     play.add_argument("--write-hardware", action="store_true")
     live = sub.add_parser("dashboard-live", help="run the system dashboard with explicit hardware confirmation")
     live.add_argument("--seconds", type=float, default=30)
-    live.add_argument("--interval", type=float, default=0.5)
+    live.add_argument("--interval", type=float, default=1.0)
     live.add_argument("--brightness", type=int, default=60)
     live.add_argument("--device-id", required=True)
     live.add_argument("--write-hardware", action="store_true")

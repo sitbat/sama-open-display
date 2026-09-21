@@ -196,18 +196,18 @@ public sealed partial class HomePage : Page
         StackPanel details = new() { Spacing = 8 };
         details.Children.Add(new TextBlock
         {
-            Text = "持续仪表盘先发送一张完整画面，随后只发送变化区域，直到你点击停止。请先退出 SAMA 原厂软件。",
+            Text = "持续发送会先写入一张完整画面，随后按当前主题更新变化区域，直到你点击停止。请先退出 SAMA 原厂软件。",
             TextWrapping = TextWrapping.Wrap,
         });
         details.Children.Add(new TextBlock { Text = $"端口：{_displayDevice.Port}" });
         details.Children.Add(new TextBlock { Text = $"主题：{theme.Name}" });
-        details.Children.Add(new TextBlock { Text = "目标间隔：0.5 秒（差分较大时会自动等待传输完成）" });
+        details.Children.Add(new TextBlock { Text = "默认帧率：1 FPS（差分较大时会自动等待传输完成）" });
         details.Children.Add(new TextBlock { Text = $"协议身份：{BackendService.VerifiedDisplayIdentity}" });
 
         ContentDialog dialog = new()
         {
             XamlRoot = XamlRoot,
-            Title = "开始持续仪表盘？",
+            Title = "开始持续发送画面？",
             Content = details,
             PrimaryButtonText = "确认开始",
             CloseButtonText = "取消",
@@ -219,12 +219,12 @@ public sealed partial class HomePage : Page
         _hardwareBusy = true;
         _dashboardRunning = true;
         _dashboardCancellation = new CancellationTokenSource();
-        ContinuousButton.Content = "停止持续仪表盘";
+        ContinuousButton.Content = "停止持续发送画面";
         UpdateHardwareAvailability();
         HardwareInfo.IsOpen = true;
         HardwareInfo.IsClosable = false;
         HardwareInfo.Severity = InfoBarSeverity.Informational;
-        HardwareInfo.Title = "持续仪表盘运行中";
+        HardwareInfo.Title = "正在持续发送画面";
         HardwareInfo.Message = $"正在使用“{theme.Name}”，点击停止后会安全关闭串口。";
         try
         {
@@ -234,13 +234,13 @@ public sealed partial class HomePage : Page
                 (int)Math.Round(BrightnessSlider.Value),
                 _dashboardCancellation.Token);
             HardwareInfo.Severity = InfoBarSeverity.Success;
-            HardwareInfo.Title = _dashboardCancellation.IsCancellationRequested ? "持续仪表盘已停止" : "持续仪表盘已结束";
+            HardwareInfo.Title = _dashboardCancellation.IsCancellationRequested ? "持续发送已停止" : "持续发送已结束";
             HardwareInfo.Message = result;
         }
         catch (Exception exception)
         {
             HardwareInfo.Severity = InfoBarSeverity.Error;
-            HardwareInfo.Title = "持续仪表盘异常停止";
+            HardwareInfo.Title = "持续发送异常停止";
             HardwareInfo.Message = exception.Message;
         }
         finally
@@ -249,7 +249,7 @@ public sealed partial class HomePage : Page
             _dashboardCancellation = null;
             _dashboardRunning = false;
             _hardwareBusy = false;
-            ContinuousButton.Content = "开始持续仪表盘";
+            ContinuousButton.Content = "开始持续发送画面";
             HardwareInfo.IsClosable = true;
             UpdateHardwareAvailability();
         }

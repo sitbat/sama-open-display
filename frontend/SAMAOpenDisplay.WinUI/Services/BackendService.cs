@@ -135,7 +135,7 @@ public sealed class BackendService
         List<string> arguments = [
             "dashboard-live",
             "--seconds", "43200",
-            "--interval", "0.5",
+            "--interval", "1.0",
             "--brightness", brightness.ToString(System.Globalization.CultureInfo.InvariantCulture),
             "--device-id", deviceIdentity,
             "--plugins-directory", PluginDirectory,

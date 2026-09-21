@@ -80,7 +80,7 @@ GUI 中的“发送到小屏”按钮也会在每次写入前要求确认。
 python -m sama_display play D:\Videos\demo.mp4 --max-fps 0.8 `
   --device-id chs_65inch.dev1_rom1.91 --write-hardware
 
-python -m sama_display dashboard-live --seconds 60 --interval 0.5 `
+python -m sama_display dashboard-live --seconds 60 --interval 1.0 `
   --device-id chs_65inch.dev1_rom1.91 --write-hardware
 ```
 
@@ -107,10 +107,10 @@ powershell -ExecutionPolicy Bypass -File scripts\build-winui.ps1
 
 WinUI 现在包含一次性“发送当前画面”入口。按钮仅在检测到目标 USB 小屏且已有有效预览时启用；每次发送都
 会显示端口、USB 标识、亮度和预期协议身份，并要求用户明确确认。后端仍会执行 `--write-hardware` 门禁、
-HELLO 握手以及 `chs_65inch.dev1_rom1.91` 精确身份比对。持续仪表盘沿用相同安全门，并在每次启动前再次确认。
+HELLO 握手以及 `chs_65inch.dev1_rom1.91` 精确身份比对。持续发送画面沿用相同安全门，并在每次启动前再次确认。
 
-持续仪表盘使用当前所选主题和只读数据前置，目标间隔为 0.5 秒；如果一帧传输耗时更长，不会排队积压。
-“停止持续仪表盘”通过停止信号让传输管线在当前数据块边界退出并关闭串口。
+持续发送画面使用当前所选主题和只读数据前置，默认帧率为 1 FPS；如果一帧传输耗时更长，不会排队积压。
+“停止持续发送画面”通过停止信号让传输管线在当前数据块边界退出并关闭串口。
 
 首页“内容”区域中的“使用主题”会列出内置主题以及用户安装并启用的主题插件。发行包只预装
 “系统指标接口”数据前置；不再预装系统仪表盘或 SAMA 网格主题插件。切换主题后会立即重新生成安全预览。

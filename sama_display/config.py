@@ -31,7 +31,7 @@ class ConnectionConfig:
 @dataclass(frozen=True)
 class ContentConfig:
     mode: str = "dashboard"
-    fps: float = 2.0
+    fps: float = 1.0
     fit: str = "cover"
 
 
