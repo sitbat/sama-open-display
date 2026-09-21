@@ -32,6 +32,7 @@ def build_parser() -> argparse.ArgumentParser:
     preview.add_argument("--text")
     preview.add_argument("--output", type=Path, default=Path("outputs/dashboard.png"))
     preview.add_argument("--config", type=Path)
+    preview.add_argument("--fit", choices=("cover", "contain"))
     preview.add_argument("--theme-id")
     preview.add_argument("--plugins-directory", type=Path, default=Path("plugins"))
     animate = sub.add_parser("animate-dashboard", help="render a local animated GIF without touching hardware")
@@ -271,7 +272,11 @@ def main(argv: list[str] | None = None) -> int:
     config = load_config(args.config)
     if args.image:
         with Image.open(args.image) as source:
-            frame = fit_image(source, (config.display.width, config.display.height), config.content.fit)
+            frame = fit_image(
+                source,
+                (config.display.width, config.display.height),
+                args.fit or config.content.fit,
+            )
     elif args.text:
         frame = text_frame(args.text)
     else:

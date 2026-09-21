@@ -304,7 +304,7 @@ class DisplayApp(tk.Tk):
                 self._next_media_frame()
             else:
                 with Image.open(path) as source:
-                    self.frame_image = fit_image(source, fit=self.fit_mode.get())
+                    self.frame_image = fit_image(source, mode=self.fit_mode.get())
                 self.refresh_preview()
         except Exception as exc:
             messagebox.showerror("媒体加载失败", str(exc))

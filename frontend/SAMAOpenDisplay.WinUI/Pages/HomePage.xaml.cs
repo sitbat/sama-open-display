@@ -5,11 +5,19 @@ using Microsoft.UI.Xaml.Media.Imaging;
 using SAMAOpenDisplay_WinUI.Services;
 using SAMAOpenDisplay_WinUI.Models;
 using Windows.Storage;
+using Windows.Storage.Pickers;
 
 namespace SAMAOpenDisplay_WinUI.Pages;
 
 public sealed partial class HomePage : Page
 {
+    private enum ContentMode
+    {
+        Theme,
+        Image,
+        Text,
+    }
+
     public ObservableCollection<ThemeInfo> Themes { get; } = [];
     private bool _loadingThemes;
     private int _previewGeneration;
@@ -18,6 +26,10 @@ public sealed partial class HomePage : Page
     private bool _hardwareBusy;
     private bool _dashboardRunning;
     private CancellationTokenSource? _dashboardCancellation;
+    private ContentMode _contentMode = ContentMode.Theme;
+    private string? _selectedImagePath;
+    private string _textContent = "你好，SAMA Open Display";
+    private bool _changingContentMode;
 
     public HomePage()
     {
@@ -64,8 +76,13 @@ public sealed partial class HomePage : Page
         PreviewProgress.IsActive = true;
         try
         {
-            string? themeId = (ThemePicker.SelectedItem as ThemeInfo)?.Id;
-            string path = await BackendService.Current.RenderPreviewAsync(themeId);
+            string path = _contentMode switch
+            {
+                ContentMode.Image when !string.IsNullOrWhiteSpace(_selectedImagePath) =>
+                    await BackendService.Current.RenderImagePreviewAsync(_selectedImagePath, CurrentFitMode()),
+                ContentMode.Text => await BackendService.Current.RenderTextPreviewAsync(_textContent),
+                _ => await BackendService.Current.RenderThemePreviewAsync((ThemePicker.SelectedItem as ThemeInfo)?.Id),
+            };
             StorageFile file = await StorageFile.GetFileFromPathAsync(path);
             using var stream = await file.OpenReadAsync();
             BitmapImage bitmap = new();
@@ -108,7 +125,15 @@ public sealed partial class HomePage : Page
         bool ready = _displayDevice is not null &&
             !string.IsNullOrWhiteSpace(_currentPreviewPath) && File.Exists(_currentPreviewPath);
         SendButton.IsEnabled = ready && !_hardwareBusy;
-        ContinuousButton.IsEnabled = _dashboardRunning || (ready && !_hardwareBusy);
+        ContinuousButton.IsEnabled = _dashboardRunning ||
+            (ready && !_hardwareBusy && _contentMode == ContentMode.Theme);
+        ThemePicker.IsEnabled = !_hardwareBusy && _contentMode == ContentMode.Theme;
+        FitPicker.IsEnabled = !_hardwareBusy && _contentMode == ContentMode.Image;
+        ThemeOption.IsEnabled = !_hardwareBusy;
+        ImageOption.IsEnabled = !_hardwareBusy;
+        TextOption.IsEnabled = !_hardwareBusy;
+        ChooseImageButton.IsEnabled = !_hardwareBusy;
+        EditTextButton.IsEnabled = !_hardwareBusy;
     }
 
     private async void RefreshPreview_Click(object sender, RoutedEventArgs e) => await RefreshPreviewAsync();
@@ -119,6 +144,126 @@ public sealed partial class HomePage : Page
         UpdateThemeDescription();
         if (!_loadingThemes && IsLoaded)
             await RefreshPreviewAsync();
+    }
+
+    private string CurrentFitMode() => FitPicker.SelectedIndex == 1 ? "contain" : "cover";
+
+    private async void ThemeOption_Checked(object sender, RoutedEventArgs e)
+    {
+        if (_changingContentMode || !IsLoaded)
+            return;
+        _contentMode = ContentMode.Theme;
+        ImageDescription.Visibility = Visibility.Collapsed;
+        ChooseImageButton.Visibility = Visibility.Collapsed;
+        TextDescription.Visibility = Visibility.Collapsed;
+        EditTextButton.Visibility = Visibility.Collapsed;
+        InvalidatePreview();
+        await RefreshPreviewAsync();
+    }
+
+    private async void ImageOption_Checked(object sender, RoutedEventArgs e)
+    {
+        if (_changingContentMode || !IsLoaded)
+            return;
+        if (!await ChooseImageAsync())
+            RestoreSelectedMode();
+    }
+
+    private async Task<bool> ChooseImageAsync()
+    {
+        FileOpenPicker picker = new();
+        foreach (string extension in new[] { ".png", ".jpg", ".jpeg", ".bmp", ".webp", ".gif" })
+            picker.FileTypeFilter.Add(extension);
+        picker.SuggestedStartLocation = PickerLocationId.PicturesLibrary;
+        nint hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+        StorageFile? file = await picker.PickSingleFileAsync();
+        if (file is null)
+            return false;
+
+        _contentMode = ContentMode.Image;
+        _selectedImagePath = file.Path;
+        ImageDescription.Text = file.Name.EndsWith(".gif", StringComparison.OrdinalIgnoreCase)
+            ? $"{file.Name} · 当前发送所选 GIF 的预览帧"
+            : file.Name;
+        ImageDescription.Visibility = Visibility.Visible;
+        ChooseImageButton.Visibility = Visibility.Visible;
+        TextDescription.Visibility = Visibility.Collapsed;
+        EditTextButton.Visibility = Visibility.Collapsed;
+        InvalidatePreview();
+        await RefreshPreviewAsync();
+        return true;
+    }
+
+    private async void ChooseImageButton_Click(object sender, RoutedEventArgs e) => await ChooseImageAsync();
+
+    private async void TextOption_Checked(object sender, RoutedEventArgs e)
+    {
+        if (_changingContentMode || !IsLoaded)
+            return;
+        if (!await EditTextAsync())
+            RestoreSelectedMode();
+    }
+
+    private async Task<bool> EditTextAsync()
+    {
+        TextBox editor = new()
+        {
+            Text = _textContent,
+            AcceptsReturn = true,
+            TextWrapping = TextWrapping.Wrap,
+            MinWidth = 480,
+            MinHeight = 180,
+            SelectionStart = _textContent.Length,
+        };
+        ContentDialog dialog = new()
+        {
+            XamlRoot = XamlRoot,
+            Title = "编辑文字画面",
+            Content = editor,
+            PrimaryButtonText = "生成预览",
+            CloseButtonText = "取消",
+            DefaultButton = ContentDialogButton.Primary,
+        };
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary || string.IsNullOrWhiteSpace(editor.Text))
+            return false;
+
+        _contentMode = ContentMode.Text;
+        _textContent = editor.Text.Trim();
+        TextDescription.Text = _textContent.ReplaceLineEndings(" ");
+        TextDescription.Visibility = Visibility.Visible;
+        EditTextButton.Visibility = Visibility.Visible;
+        ImageDescription.Visibility = Visibility.Collapsed;
+        ChooseImageButton.Visibility = Visibility.Collapsed;
+        InvalidatePreview();
+        await RefreshPreviewAsync();
+        return true;
+    }
+
+    private async void EditTextButton_Click(object sender, RoutedEventArgs e) => await EditTextAsync();
+
+    private async void FitPicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (IsLoaded && _contentMode == ContentMode.Image && !string.IsNullOrWhiteSpace(_selectedImagePath))
+        {
+            InvalidatePreview();
+            await RefreshPreviewAsync();
+        }
+    }
+
+    private void InvalidatePreview()
+    {
+        _currentPreviewPath = null;
+        UpdateHardwareAvailability();
+    }
+
+    private void RestoreSelectedMode()
+    {
+        _changingContentMode = true;
+        ThemeOption.IsChecked = _contentMode == ContentMode.Theme;
+        ImageOption.IsChecked = _contentMode == ContentMode.Image;
+        TextOption.IsChecked = _contentMode == ContentMode.Text;
+        _changingContentMode = false;
     }
 
     private async void SendButton_Click(object sender, RoutedEventArgs e)

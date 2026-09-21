@@ -3,6 +3,7 @@ import tempfile
 import io
 from pathlib import Path
 from contextlib import redirect_stdout
+from PIL import Image
 
 from sama_display.cli import build_parser, main
 
@@ -28,6 +29,30 @@ class CliTests(unittest.TestCase):
     def test_plan_is_offline(self):
         args = build_parser().parse_args(["plan"])
         self.assertEqual(args.command, "plan")
+
+    def test_image_preview_honors_contain_fit(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "square.png"
+            output = Path(tmp) / "preview.png"
+            Image.new("RGB", (100, 100), "red").save(source)
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(main([
+                    "preview", "--image", str(source), "--fit", "contain",
+                    "--output", str(output),
+                ]), 0)
+            with Image.open(output) as preview:
+                self.assertEqual(preview.size, (1568, 720))
+                self.assertEqual(preview.getpixel((0, 0)), (0, 0, 0))
+
+    def test_text_preview_is_rendered_offline(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "text.png"
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(main([
+                    "preview", "--text", "WinUI text", "--output", str(output),
+                ]), 0)
+            with Image.open(output) as preview:
+                self.assertEqual(preview.size, (1568, 720))
 
     def test_live_dashboard_refuses_hardware_without_acknowledgement(self):
         with self.assertRaisesRegex(SystemExit, "refusing hardware access"):

@@ -26,7 +26,7 @@
                 <Border MinHeight="356" Padding="18" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8">
                     <StackPanel Spacing="12">
                         <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="内容" />
-                        <RadioButton x:Name="ThemeOption" Content="使用主题" IsChecked="True" />
+                        <RadioButton x:Name="ThemeOption" GroupName="ContentMode" Content="使用主题" IsChecked="True" Checked="ThemeOption_Checked" />
                         <ComboBox
                             x:Name="ThemePicker"
                             Header="主题选择"
@@ -41,8 +41,12 @@
                             </ComboBox.ItemTemplate>
                         </ComboBox>
                         <TextBlock x:Name="ThemeDescription" Height="40" MaxLines="2" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                        <RadioButton Content="加载图片 / 媒体" IsEnabled="False" />
-                        <RadioButton Content="文字画面" IsEnabled="False" />
+                        <RadioButton x:Name="ImageOption" GroupName="ContentMode" Content="加载图片 / GIF" Checked="ImageOption_Checked" />
+                        <TextBlock x:Name="ImageDescription" MaxLines="2" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Visibility="Collapsed" />
+                        <Button x:Name="ChooseImageButton" HorizontalAlignment="Stretch" Content="重新选择图片 / GIF" Click="ChooseImageButton_Click" Visibility="Collapsed" />
+                        <RadioButton x:Name="TextOption" GroupName="ContentMode" Content="文字画面" Checked="TextOption_Checked" />
+                        <TextBlock x:Name="TextDescription" MaxLines="2" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Visibility="Collapsed" />
+                        <Button x:Name="EditTextButton" HorizontalAlignment="Stretch" Content="编辑文字" Click="EditTextButton_Click" Visibility="Collapsed" />
                         <Button HorizontalAlignment="Stretch" Content="刷新预览" Click="RefreshPreview_Click" />
                     </StackPanel>
                 </Border>
@@ -51,7 +55,7 @@
                         <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="显示参数" />
                         <TextBlock Text="亮度" />
                         <Slider x:Name="BrightnessSlider" Minimum="10" Maximum="100" Value="70" />
-                        <ComboBox Header="画面适配" SelectedIndex="0">
+                        <ComboBox x:Name="FitPicker" Header="画面适配" SelectedIndex="0" SelectionChanged="FitPicker_SelectionChanged">
                             <ComboBoxItem Content="填满并裁切" />
                             <ComboBoxItem Content="完整包含" />
                         </ComboBox>

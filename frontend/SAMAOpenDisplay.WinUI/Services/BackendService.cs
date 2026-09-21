@@ -184,18 +184,25 @@ public sealed class BackendService
             : Path.GetFullPath(configuredDataDirectory);
     }
 
-    public async Task<string> RenderPreviewAsync(string? themeId = null)
+    private async Task<string> RenderPreviewAsync(params string[] contentArguments)
     {
         string directory = Path.Combine(GetDataDirectory(), "preview");
         Directory.CreateDirectory(directory);
-        string path = Path.Combine(directory, $"dashboard-{Guid.NewGuid():N}.png");
+        string path = Path.Combine(directory, $"content-{Guid.NewGuid():N}.png");
         List<string> arguments = ["preview", "--output", path, "--plugins-directory", PluginDirectory];
-        if (!string.IsNullOrWhiteSpace(themeId))
-        {
-            arguments.Add("--theme-id");
-            arguments.Add(themeId);
-        }
+        arguments.AddRange(contentArguments);
         await RunAsync([.. arguments]);
         return path;
     }
+
+    public Task<string> RenderThemePreviewAsync(string? themeId = null) =>
+        string.IsNullOrWhiteSpace(themeId)
+            ? RenderPreviewAsync()
+            : RenderPreviewAsync("--theme-id", themeId);
+
+    public Task<string> RenderImagePreviewAsync(string imagePath, string fitMode) =>
+        RenderPreviewAsync("--image", imagePath, "--fit", fitMode);
+
+    public Task<string> RenderTextPreviewAsync(string text) =>
+        RenderPreviewAsync("--text", text);
 }
