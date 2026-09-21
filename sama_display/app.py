@@ -17,7 +17,6 @@ from .config import AppConfig, load_config
 from .controller import DisplayController
 from .data_provider import DataService
 from .device import discover_devices
-from .media import iter_media
 from .render import dashboard_frame, fit_image, text_frame
 from .plugin import PluginManager
 from .theme import discover_themes
@@ -68,7 +67,6 @@ class DisplayApp(tk.Tk):
         self.theme_name = tk.StringVar(value=self.current_theme.name)
         self.frame_image = dashboard_frame(theme=self.current_theme, data=self.data_service.snapshot())
         self.preview_photo = None
-        self.animation = None
         self.animation_job = None
         self.hardware_thread = None
         self.hardware_stop = threading.Event()
@@ -187,8 +185,8 @@ class DisplayApp(tk.Tk):
     def _content_panel(self, panel) -> None:
         ttk.Label(panel, text="内容", style="PanelTitle.TLabel").pack(anchor="w", pady=(0, 10))
         ttk.Button(panel, text="系统仪表盘", style="Side.TButton", command=self.show_dashboard).pack(fill="x", pady=3)
-        ttk.Button(panel, text="加载图片 / 媒体", style="Side.TButton", command=self.load_media).pack(fill="x", pady=3)
-        ttk.Button(panel, text="文字画面", style="Side.TButton", command=self.show_text_dialog).pack(fill="x", pady=3)
+        ttk.Button(panel, text="加载图片", style="Side.TButton", command=self.load_media).pack(fill="x", pady=3)
+        ttk.Button(panel, text="显示文本", style="Side.TButton", command=self.show_text_dialog).pack(fill="x", pady=3)
         ttk.Separator(panel).pack(fill="x", pady=16)
         ttk.Label(panel, text="显示主题", style="PanelTitle.TLabel").pack(anchor="w", pady=(0, 7))
         self.theme_picker = ttk.Combobox(panel, state="readonly", textvariable=self.theme_name,
@@ -293,50 +291,27 @@ class DisplayApp(tk.Tk):
         self.animation_job = self.after(1000, self._dashboard_tick)
 
     def load_media(self) -> None:
-        path = filedialog.askopenfilename(filetypes=[("图片和媒体", "*.png *.jpg *.jpeg *.bmp *.webp *.gif *.mp4 *.avi *.mov *.mkv"), ("全部文件", "*.*")])
+        path = filedialog.askopenfilename(filetypes=[("图片", "*.png *.jpg *.jpeg *.bmp *.webp"), ("全部文件", "*.*")])
         if not path:
             return
         self.stop_preview_animation()
         self.source_name.set(Path(path).name)
         try:
-            if Path(path).suffix.lower() in {".gif", ".mp4", ".avi", ".mov", ".mkv"}:
-                self.animation = iter_media(path, fit=self.fit_mode.get(), max_fps=10)
-                self._next_media_frame()
-            else:
-                with Image.open(path) as source:
-                    self.frame_image = fit_image(source, mode=self.fit_mode.get())
-                self.refresh_preview()
+            with Image.open(path) as source:
+                self.frame_image = fit_image(source, mode=self.fit_mode.get())
+            self.refresh_preview()
         except Exception as exc:
             messagebox.showerror("媒体加载失败", str(exc))
-
-    def _next_media_frame(self) -> None:
-        try:
-            frame = next(self.animation)
-        except StopIteration:
-            self.stop_preview_animation()
-            return
-        except Exception as exc:
-            self.stop_preview_animation()
-            self.status_text.set(f"媒体解码失败：{exc}")
-            return
-        self.frame_image = frame.image
-        self.refresh_preview()
-        self.animation_job = self.after(max(16, frame.duration_ms), self._next_media_frame)
 
     def stop_preview_animation(self) -> None:
         if self.animation_job is not None:
             self.after_cancel(self.animation_job)
             self.animation_job = None
-        if self.animation is not None:
-            close = getattr(self.animation, "close", None)
-            if close:
-                close()
-            self.animation = None
 
     def show_text_dialog(self) -> None:
         self.stop_preview_animation()
         dialog = tk.Toplevel(self)
-        dialog.title("生成文字画面")
+        dialog.title("生成显示文本")
         dialog.geometry("520x300")
         dialog.transient(self)
         entry = tk.Text(dialog, font=("Microsoft YaHei UI", 14), wrap="word")
@@ -346,7 +321,7 @@ class DisplayApp(tk.Tk):
             value = entry.get("1.0", "end").strip()
             if value:
                 self.frame_image = text_frame(value)
-                self.source_name.set("文字画面")
+                self.source_name.set("显示文本")
                 dialog.destroy()
                 self.refresh_preview()
         ttk.Button(dialog, text="生成预览", style="Accent.TButton", command=apply).pack(pady=(0, 14))

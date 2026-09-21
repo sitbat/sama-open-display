@@ -1,11 +1,11 @@
-"""Normalized GIF/video frame sources for preview and future transmission."""
+"""Normalized video frame sources for preview and future transmission."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
 from collections.abc import Iterator
-from PIL import Image, ImageSequence
+from PIL import Image
 
 from . import WIDTH, HEIGHT
 from .render import fit_image
@@ -16,27 +16,6 @@ class MediaFrame:
     image: Image.Image
     duration_ms: int
     index: int
-
-
-def _duration(value: object, fallback_fps: float) -> int:
-    try:
-        duration = int(value)
-    except (TypeError, ValueError):
-        duration = 0
-    return duration if duration > 0 else max(1, round(1000 / fallback_fps))
-
-
-def iter_gif(
-    path: str | Path,
-    size: tuple[int, int] = (WIDTH, HEIGHT),
-    fit: str = "cover",
-    fallback_fps: float = 10,
-) -> Iterator[MediaFrame]:
-    """Yield fully composited GIF frames with their display durations."""
-    with Image.open(path) as source:
-        for index, frame in enumerate(ImageSequence.Iterator(source)):
-            rendered = fit_image(frame.convert("RGBA"), size, fit)
-            yield MediaFrame(rendered, _duration(frame.info.get("duration"), fallback_fps), index)
 
 
 def iter_video(
@@ -86,6 +65,5 @@ def iter_media(
 ) -> Iterator[MediaFrame]:
     path = Path(path)
     if path.suffix.lower() == ".gif":
-        yield from iter_gif(path, size=size, fit=fit, fallback_fps=max_fps)
-    else:
-        yield from iter_video(path, size=size, fit=fit, max_fps=max_fps)
+        raise ValueError("GIF input is not supported")
+    yield from iter_video(path, size=size, fit=fit, max_fps=max_fps)

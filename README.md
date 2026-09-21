@@ -52,7 +52,7 @@ python -m unittest discover -v
 python -m sama_display preview --image D:\Pictures\example.png --output outputs\picture.png
 ```
 
-生成动态仪表盘 GIF、检查 GIF/视频解码、检查完整发送计划：
+生成动态仪表盘演示、检查视频解码、检查完整发送计划：
 
 ```powershell
 python -m sama_display animate-dashboard --seconds 5 --fps 2
@@ -74,7 +74,7 @@ python -m sama_display send `
 
 GUI 中的“发送到小屏”按钮也会在每次写入前要求确认。
 
-播放 GIF/视频或运行使用 `CC` 差分刷新的实时仪表盘：
+播放视频或运行使用 `CC` 差分刷新的实时仪表盘：
 
 ```powershell
 python -m sama_display play D:\Videos\demo.mp4 --max-fps 0.8 `
@@ -161,7 +161,6 @@ SAMA Open Display 只使用统一的 `.sodpkg` 插件文件。“插件中心”
 
 ## 动态内容策略
 
-- GIF 保留每一帧自己的时长；
 - 视频按 `max_fps` 节流，不会因为源视频是 60 FPS 就无限堆积；
 - GUI 的系统仪表盘每秒重新采样；
 - 连续帧使用已在 ROM 1.91 真机验证的原厂 `CC` 压缩差分流；

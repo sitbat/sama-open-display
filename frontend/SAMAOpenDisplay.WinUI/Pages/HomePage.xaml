@@ -41,10 +41,10 @@
                             </ComboBox.ItemTemplate>
                         </ComboBox>
                         <TextBlock x:Name="ThemeDescription" Height="40" MaxLines="2" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                        <RadioButton x:Name="ImageOption" GroupName="ContentMode" Content="加载图片 / GIF" Checked="ImageOption_Checked" />
+                        <RadioButton x:Name="ImageOption" GroupName="ContentMode" Content="加载图片" Checked="ImageOption_Checked" />
                         <TextBlock x:Name="ImageDescription" MaxLines="2" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Visibility="Collapsed" />
-                        <Button x:Name="ChooseImageButton" HorizontalAlignment="Stretch" Content="重新选择图片 / GIF" Click="ChooseImageButton_Click" Visibility="Collapsed" />
-                        <RadioButton x:Name="TextOption" GroupName="ContentMode" Content="文字画面" Checked="TextOption_Checked" />
+                        <Button x:Name="ChooseImageButton" HorizontalAlignment="Stretch" Content="重新选择图片" Click="ChooseImageButton_Click" Visibility="Collapsed" />
+                        <RadioButton x:Name="TextOption" GroupName="ContentMode" Content="显示文本" Checked="TextOption_Checked" />
                         <TextBlock x:Name="TextDescription" MaxLines="2" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Visibility="Collapsed" />
                         <Button x:Name="EditTextButton" HorizontalAlignment="Stretch" Content="编辑文字" Click="EditTextButton_Click" Visibility="Collapsed" />
                         <Button HorizontalAlignment="Stretch" Content="刷新预览" Click="RefreshPreview_Click" />

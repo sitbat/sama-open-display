@@ -172,7 +172,7 @@ public sealed partial class HomePage : Page
     private async Task<bool> ChooseImageAsync()
     {
         FileOpenPicker picker = new();
-        foreach (string extension in new[] { ".png", ".jpg", ".jpeg", ".bmp", ".webp", ".gif" })
+        foreach (string extension in new[] { ".png", ".jpg", ".jpeg", ".bmp", ".webp" })
             picker.FileTypeFilter.Add(extension);
         picker.SuggestedStartLocation = PickerLocationId.PicturesLibrary;
         nint hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
@@ -183,9 +183,7 @@ public sealed partial class HomePage : Page
 
         _contentMode = ContentMode.Image;
         _selectedImagePath = file.Path;
-        ImageDescription.Text = file.Name.EndsWith(".gif", StringComparison.OrdinalIgnoreCase)
-            ? $"{file.Name} · 当前发送所选 GIF 的预览帧"
-            : file.Name;
+        ImageDescription.Text = file.Name;
         ImageDescription.Visibility = Visibility.Visible;
         ChooseImageButton.Visibility = Visibility.Visible;
         TextDescription.Visibility = Visibility.Collapsed;
@@ -219,7 +217,7 @@ public sealed partial class HomePage : Page
         ContentDialog dialog = new()
         {
             XamlRoot = XamlRoot,
-            Title = "编辑文字画面",
+            Title = "编辑显示文本",
             Content = editor,
             PrimaryButtonText = "生成预览",
             CloseButtonText = "取消",
