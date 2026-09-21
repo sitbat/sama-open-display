@@ -86,9 +86,10 @@
                 <Border Padding="18" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8">
                     <StackPanel Spacing="10">
                         <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="硬件操作" />
-                        <Button HorizontalAlignment="Stretch" Style="{StaticResource AccentButtonStyle}" Content="发送当前画面" IsEnabled="False" />
+                        <Button x:Name="SendButton" HorizontalAlignment="Stretch" Style="{StaticResource AccentButtonStyle}" Content="发送当前画面" IsEnabled="False" Click="SendButton_Click" />
                         <Button HorizontalAlignment="Stretch" Content="开始持续仪表盘" IsEnabled="False" />
-                        <TextBlock TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="WinUI 前端第一阶段仅开放只读检测与预览；硬件写入将在迁移验证后启用。" />
+                        <InfoBar x:Name="HardwareInfo" IsOpen="False" IsClosable="True" />
+                        <TextBlock TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="单帧发送会先显示确认窗口，并再次核验设备协议身份。持续仪表盘将在单帧实机验证后启用。" />
                     </StackPanel>
                 </Border>
             </StackPanel>

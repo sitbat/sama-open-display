@@ -101,8 +101,12 @@ powershell -ExecutionPolicy Bypass -File scripts\build-winui.ps1
 ```
 
 输出目录为 `dist\SamaRP-WinUI\`。`SamaRP.exe` 是 WinUI 3 主入口；.NET 和 Windows App SDK
-组件保持为外部 DLL，Python 协议核心位于 `backend`，插件位于 `plugins`。当前 WinUI 迁移阶段开放只读设备
-检测、仪表盘预览、插件批量管理、依赖和权限；硬件写入仍由已验证的经典界面提供。
+组件保持为外部 DLL，Python 协议核心位于 `backend`，插件位于 `plugins`。当前 WinUI 迁移阶段开放设备
+检测、仪表盘预览、插件批量管理、依赖和权限，以及带双重安全门的一次性画面发送。
+
+WinUI 现在包含一次性“发送当前画面”入口。按钮仅在检测到目标 USB 小屏且已有有效预览时启用；每次发送都
+会显示端口、USB 标识、亮度和预期协议身份，并要求用户明确确认。后端仍会执行 `--write-hardware` 门禁、
+HELLO 握手以及 `chs_65inch.dev1_rom1.91` 精确身份比对。持续仪表盘需在该入口完成实机验证后再开放。
 
 首页“内容”区域中的“使用主题”会列出内置主题以及用户安装并启用的主题插件。发行包只预装
 “系统指标接口”数据前置；不再预装系统仪表盘或 SAMA 网格主题插件。切换主题后会立即重新生成安全预览。

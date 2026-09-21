@@ -1,6 +1,6 @@
 """SAMA 6.5-inch open display controller."""
 
-__version__ = "0.7.2"
+__version__ = "0.8.0"
 
 # USB protocol scan buffer versus the user-facing, physically mounted panel.
 PROTOCOL_WIDTH = 720

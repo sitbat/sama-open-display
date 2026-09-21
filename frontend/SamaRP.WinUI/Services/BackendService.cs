@@ -7,6 +7,7 @@ namespace SamaRP_WinUI.Services;
 public sealed class BackendService
 {
     public static BackendService Current { get; } = new();
+    public const string VerifiedDisplayIdentity = "chs_65inch.dev1_rom1.91";
 
     public string RootDirectory { get; }
     public string PluginDirectory { get; }
@@ -99,20 +100,28 @@ public sealed class BackendService
     public Task UninstallPluginsAsync(IEnumerable<string> ids) =>
         RunAsync(["plugin-uninstall", .. ids, "--directory", PluginDirectory]);
 
-    public async Task<bool> DetectDisplayAsync()
+    public async Task<IReadOnlyList<DisplayDeviceInfo>> DetectDisplaysAsync()
     {
         try
         {
             string json = await RunAsync("detect");
-            using JsonDocument document = JsonDocument.Parse(json);
-            return document.RootElement.EnumerateArray().Any(item =>
-                item.TryGetProperty("role", out JsonElement role) && role.GetString() == "display");
+            return (JsonSerializer.Deserialize<List<DisplayDeviceInfo>>(json) ?? [])
+                .Where(item => item.Role == "display" && !string.IsNullOrWhiteSpace(item.Port))
+                .ToList();
         }
         catch
         {
-            return false;
+            return [];
         }
     }
+
+    public Task<string> SendFrameAsync(string imagePath, string deviceIdentity, int brightness) =>
+        RunAsync(
+            "send",
+            "--image", imagePath,
+            "--brightness", brightness.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            "--device-id", deviceIdentity,
+            "--write-hardware");
 
     public async Task<string> RenderPreviewAsync(string? themeId = null)
     {
