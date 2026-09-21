@@ -154,13 +154,9 @@ class DisplayController:
         current: Image.Image,
         frame_id: int,
         *,
-        allow_experimental: bool = False,
+        cancelled: Callable[[], bool] | None = None,
     ) -> bool:
-        """Send an experimental OEM-style CC delta, disabled by default."""
-        if not allow_experimental:
-            raise AuthorizationRequired(
-                "CC updates are disabled: the recovered 6.5-inch delta format is not hardware-validated"
-            )
+        """Send a hardware-validated OEM CC delta from one complete frame to the next."""
         if self.state is not ControllerState.READY or self.transport is None:
             raise ConnectionError("HELLO handshake has not completed")
         if self.identity is None or self.identity.model != "65inch" or self.identity.rom_version <= 88:
@@ -170,10 +166,14 @@ class DisplayController:
             return False
         header, pixels = packets
         try:
-            for packet in (header, pixels, command_packet(Command.QUERY_STATUS)):
+            # The OEM 3.1.1 CC path sends only the command block and framed
+            # delta stream. A status command here can race the firmware's
+            # application of the preceding update.
+            for packet in (header, pixels):
                 for offset in range(0, len(packet), 250):
+                    if cancelled and cancelled():
+                        raise InterruptedError("display transfer cancelled")
                     self.transport.write(packet[offset : offset + 250])
-            self.transport.read(1024)
             self.update_count = (self.update_count + 1) & 0xFFFFFFFF
             return True
         except Exception:

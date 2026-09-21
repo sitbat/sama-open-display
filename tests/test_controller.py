@@ -77,17 +77,16 @@ class ControllerTests(unittest.TestCase):
         current = previous.copy()
         current.putpixel((100, 120), (0, 255, 255))
         self.assertTrue(controller.update_frame(
-            previous, current, 1, allow_experimental=True
+            previous, current, 0
         ))
         self.assertEqual(controller.update_count, 1)
         self.assertTrue(all(len(block) == 250 for block in transport.writes))
+        self.assertEqual(transport.writes[-1].rstrip(b"\x00")[-2:], b"\xef\x69")
 
-    def test_delta_update_is_disabled_by_default(self):
+    def test_delta_update_requires_handshake(self):
         transport = FakeTransport()
         controller = DisplayController(transport)
-        controller.connect(allow_hardware=True)
-        controller.hello()
-        with self.assertRaisesRegex(AuthorizationRequired, "CC updates are disabled"):
+        with self.assertRaisesRegex(ConnectionError, "HELLO handshake"):
             frame = Image.new("RGB", (WIDTH, HEIGHT))
             controller.update_frame(frame, frame, 0)
 

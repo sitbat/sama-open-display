@@ -15,12 +15,16 @@ public sealed partial class HomePage : Page
     private int _previewGeneration;
     private string? _currentPreviewPath;
     private DisplayDeviceInfo? _displayDevice;
+    private bool _hardwareBusy;
+    private bool _dashboardRunning;
+    private CancellationTokenSource? _dashboardCancellation;
 
     public HomePage()
     {
         InitializeComponent();
         ThemePicker.ItemsSource = Themes;
         Loaded += HomePage_Loaded;
+        Unloaded += (_, _) => _dashboardCancellation?.Cancel();
     }
 
     private async void HomePage_Loaded(object sender, RoutedEventArgs e)
@@ -101,8 +105,10 @@ public sealed partial class HomePage : Page
 
     private void UpdateHardwareAvailability()
     {
-        SendButton.IsEnabled = _displayDevice is not null &&
+        bool ready = _displayDevice is not null &&
             !string.IsNullOrWhiteSpace(_currentPreviewPath) && File.Exists(_currentPreviewPath);
+        SendButton.IsEnabled = ready && !_hardwareBusy;
+        ContinuousButton.IsEnabled = _dashboardRunning || (ready && !_hardwareBusy);
     }
 
     private async void RefreshPreview_Click(object sender, RoutedEventArgs e) => await RefreshPreviewAsync();
@@ -143,7 +149,8 @@ public sealed partial class HomePage : Page
         if (await dialog.ShowAsync() != ContentDialogResult.Primary)
             return;
 
-        SendButton.IsEnabled = false;
+        _hardwareBusy = true;
+        UpdateHardwareAvailability();
         HardwareInfo.IsOpen = true;
         HardwareInfo.IsClosable = false;
         HardwareInfo.Severity = InfoBarSeverity.Informational;
@@ -167,6 +174,82 @@ public sealed partial class HomePage : Page
         }
         finally
         {
+            HardwareInfo.IsClosable = true;
+            _hardwareBusy = false;
+            UpdateHardwareAvailability();
+        }
+    }
+
+    private async void ContinuousButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_dashboardRunning)
+        {
+            ContinuousButton.IsEnabled = false;
+            HardwareInfo.Title = "正在安全停止…";
+            HardwareInfo.Message = "当前传输块结束后会关闭串口。";
+            _dashboardCancellation?.Cancel();
+            return;
+        }
+        if (_displayDevice is null || ThemePicker.SelectedItem is not ThemeInfo theme)
+            return;
+
+        StackPanel details = new() { Spacing = 8 };
+        details.Children.Add(new TextBlock
+        {
+            Text = "持续仪表盘先发送一张完整画面，随后只发送变化区域，直到你点击停止。请先退出 SAMA 原厂软件。",
+            TextWrapping = TextWrapping.Wrap,
+        });
+        details.Children.Add(new TextBlock { Text = $"端口：{_displayDevice.Port}" });
+        details.Children.Add(new TextBlock { Text = $"主题：{theme.Name}" });
+        details.Children.Add(new TextBlock { Text = "目标间隔：0.5 秒（差分较大时会自动等待传输完成）" });
+        details.Children.Add(new TextBlock { Text = $"协议身份：{BackendService.VerifiedDisplayIdentity}" });
+
+        ContentDialog dialog = new()
+        {
+            XamlRoot = XamlRoot,
+            Title = "开始持续仪表盘？",
+            Content = details,
+            PrimaryButtonText = "确认开始",
+            CloseButtonText = "取消",
+            DefaultButton = ContentDialogButton.Close,
+        };
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+            return;
+
+        _hardwareBusy = true;
+        _dashboardRunning = true;
+        _dashboardCancellation = new CancellationTokenSource();
+        ContinuousButton.Content = "停止持续仪表盘";
+        UpdateHardwareAvailability();
+        HardwareInfo.IsOpen = true;
+        HardwareInfo.IsClosable = false;
+        HardwareInfo.Severity = InfoBarSeverity.Informational;
+        HardwareInfo.Title = "持续仪表盘运行中";
+        HardwareInfo.Message = $"正在使用“{theme.Name}”，点击停止后会安全关闭串口。";
+        try
+        {
+            string result = await BackendService.Current.RunDashboardAsync(
+                theme.Id,
+                BackendService.VerifiedDisplayIdentity,
+                (int)Math.Round(BrightnessSlider.Value),
+                _dashboardCancellation.Token);
+            HardwareInfo.Severity = InfoBarSeverity.Success;
+            HardwareInfo.Title = _dashboardCancellation.IsCancellationRequested ? "持续仪表盘已停止" : "持续仪表盘已结束";
+            HardwareInfo.Message = result;
+        }
+        catch (Exception exception)
+        {
+            HardwareInfo.Severity = InfoBarSeverity.Error;
+            HardwareInfo.Title = "持续仪表盘异常停止";
+            HardwareInfo.Message = exception.Message;
+        }
+        finally
+        {
+            _dashboardCancellation.Dispose();
+            _dashboardCancellation = null;
+            _dashboardRunning = false;
+            _hardwareBusy = false;
+            ContinuousButton.Content = "开始持续仪表盘";
             HardwareInfo.IsClosable = true;
             UpdateHardwareAvailability();
         }

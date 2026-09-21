@@ -26,6 +26,20 @@ def image_to_bgra(image: Image.Image) -> bytes:
     return image.convert("RGBA").tobytes("raw", "BGRA")
 
 
+def landscape_pixel_index(x: int, y: int, width: int = 1568, height: int = 720) -> int:
+    """Map a landscape canvas coordinate to the OEM CC scan-buffer index.
+
+    The 6.5-inch panel consumes a clockwise-rotated ``720 x 1568`` BGRA
+    buffer. The OEM encoder addresses that buffer in ordinary row-major
+    order, so ``panel_x = height - 1 - y`` and ``panel_y = x``.
+    """
+    if not 0 <= x < width or not 0 <= y < height:
+        raise ValueError(f"coordinate ({x}, {y}) is outside {width}x{height}")
+    panel_x = height - 1 - y
+    panel_y = x
+    return panel_y * height + panel_x
+
+
 def rotate_for_panel(image: Image.Image, clockwise_degrees: int = 90) -> Image.Image:
     """Apply the physical panel scan transform without interpolation."""
     transforms = {

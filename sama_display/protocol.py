@@ -81,14 +81,13 @@ def brightness_packet(percent: int) -> bytes:
 
 
 def display_bitmap_header(width: int = 720, height: int = 1568) -> bytes:
-    """Build the inferred Rev-C full-frame command for a display geometry."""
-    if width <= 0 or height <= 0 or (width * height) % 64 or (width * width) % 64:
-        raise ValueError("geometry must produce integral /64 protocol fields")
-    total_units = width * height // 64
-    row_units = width * width // 64
-    if total_units > 0xFFFF or row_units > 0xFFFF:
-        raise ValueError("geometry exceeds 16-bit protocol fields")
-    return bytes((0xC8, 0xEF, 0x69, 0)) + total_units.to_bytes(2, "big") + row_units.to_bytes(2, "big")
+    """Build the OEM C8 command containing the full BGRA byte length."""
+    if width <= 0 or height <= 0:
+        raise ValueError("geometry must be positive")
+    byte_length = width * height * 4
+    if byte_length > 0xFFFFFFFF:
+        raise ValueError("frame byte length exceeds the protocol field")
+    return bytes((0xC8,)) + MAGIC + byte_length.to_bytes(4, "big") + b"\x00"
 
 
 def start_bitmap_packet() -> bytes:

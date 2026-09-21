@@ -21,7 +21,7 @@ class ProtocolTests(unittest.TestCase):
             brightness_packet(101)
 
     def test_65inch_header(self):
-        self.assertEqual(display_bitmap_header(), bytes.fromhex("C8 EF 69 00 44 E8 1F A4"))
+        self.assertEqual(display_bitmap_header(), bytes.fromhex("C8 EF 69 00 44 E8 00 00"))
 
     def test_start_bitmap_padding(self):
         packet = start_bitmap_packet()
@@ -67,6 +67,14 @@ class ProtocolTests(unittest.TestCase):
         self.assertEqual(int.from_bytes(header[10:14], "big"), 7)
         self.assertEqual(header[14:18], bytes(4))
         self.assertTrue(pixels.rstrip(b"\x00").endswith(bytes.fromhex("EF 69")))
+
+    def test_landscape_top_left_uses_rotated_oem_pixel_index(self):
+        previous = Image.new("RGB", (1568, 720), "black")
+        current = previous.copy()
+        current.putpixel((0, 0), (0x11, 0x22, 0x33))
+        _header, pixels = update_bitmap_packets(previous, current, frame_id=0)
+        # (0, 0) rotates to panel (719, 0), hence CC index 719 (0x02CF).
+        self.assertEqual(pixels[:7], bytes.fromhex("80 02 CF 33 22 11 FF"))
 
     def test_update_bitmap_rejects_different_sizes(self):
         with self.assertRaises(ValueError):

@@ -33,6 +33,14 @@ class CliTests(unittest.TestCase):
         with self.assertRaisesRegex(SystemExit, "refusing hardware access"):
             main(["dashboard-live", "--device-id", "chs_65inch.dev1_rom1.91"])
 
+    def test_live_dashboard_accepts_theme_and_stop_file_options(self):
+        args = build_parser().parse_args([
+            "dashboard-live", "--device-id", "test", "--theme-id", "minimal",
+            "--plugins-directory", "plugins", "--stop-file", "stop.signal",
+        ])
+        self.assertEqual(args.theme_id, "minimal")
+        self.assertEqual(args.stop_file, Path("stop.signal"))
+
 
 if __name__ == "__main__":
     unittest.main()

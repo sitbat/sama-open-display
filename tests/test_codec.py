@@ -3,11 +3,24 @@ from PIL import Image
 
 from sama_display.codec import (
     changed_region, chunks, encode_full_frame, image_to_bgra,
-    prepare_transfer_frame, rotate_for_panel,
+    landscape_pixel_index, prepare_transfer_frame, rotate_for_panel,
 )
 
 
 class CodecTests(unittest.TestCase):
+    def test_landscape_pixel_index_matches_oem_scan_order(self):
+        self.assertEqual(landscape_pixel_index(0, 0), 719)
+        self.assertEqual(landscape_pixel_index(0, 719), 0)
+        self.assertEqual(landscape_pixel_index(1567, 0), 1567 * 720 + 719)
+        self.assertEqual(landscape_pixel_index(1567, 719), 1567 * 720)
+        self.assertEqual(landscape_pixel_index(10, 20), 10 * 720 + 699)
+
+    def test_landscape_pixel_index_rejects_out_of_bounds_coordinates(self):
+        for point in ((-1, 0), (0, -1), (1568, 0), (0, 720)):
+            with self.subTest(point=point):
+                with self.assertRaises(ValueError):
+                    landscape_pixel_index(*point)
+
     def test_chunks(self):
         self.assertEqual(list(chunks(b"1234567", 3)), [b"123", b"456", b"7"])
 

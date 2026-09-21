@@ -123,13 +123,63 @@ public sealed class BackendService
             "--device-id", deviceIdentity,
             "--write-hardware");
 
-    public async Task<string> RenderPreviewAsync(string? themeId = null)
+    public async Task<string> RunDashboardAsync(
+        string? themeId,
+        string deviceIdentity,
+        int brightness,
+        CancellationToken cancellationToken)
+    {
+        string stopDirectory = Path.Combine(GetDataDirectory(), "control");
+        Directory.CreateDirectory(stopDirectory);
+        string stopFile = Path.Combine(stopDirectory, $"dashboard-stop-{Guid.NewGuid():N}.signal");
+        List<string> arguments = [
+            "dashboard-live",
+            "--seconds", "43200",
+            "--interval", "0.5",
+            "--brightness", brightness.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            "--device-id", deviceIdentity,
+            "--plugins-directory", PluginDirectory,
+            "--stop-file", stopFile,
+            "--write-hardware",
+        ];
+        if (!string.IsNullOrWhiteSpace(themeId))
+        {
+            arguments.Add("--theme-id");
+            arguments.Add(themeId);
+        }
+
+        using CancellationTokenRegistration registration = cancellationToken.Register(() =>
+        {
+            try
+            {
+                File.WriteAllText(stopFile, "stop");
+            }
+            catch (IOException)
+            {
+                // The backend may already have completed and removed the need for a stop signal.
+            }
+        });
+        try
+        {
+            return await RunAsync([.. arguments]);
+        }
+        finally
+        {
+            try { File.Delete(stopFile); } catch (IOException) { }
+        }
+    }
+
+    private static string GetDataDirectory()
     {
         string? configuredDataDirectory = Environment.GetEnvironmentVariable("SAMARP_DATA_DIR");
-        string dataDirectory = string.IsNullOrWhiteSpace(configuredDataDirectory)
+        return string.IsNullOrWhiteSpace(configuredDataDirectory)
             ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SamaRP")
             : Path.GetFullPath(configuredDataDirectory);
-        string directory = Path.Combine(dataDirectory, "preview");
+    }
+
+    public async Task<string> RenderPreviewAsync(string? themeId = null)
+    {
+        string directory = Path.Combine(GetDataDirectory(), "preview");
         Directory.CreateDirectory(directory);
         string path = Path.Combine(directory, $"dashboard-{Guid.NewGuid():N}.png");
         List<string> arguments = ["preview", "--output", path, "--plugins-directory", PluginDirectory];

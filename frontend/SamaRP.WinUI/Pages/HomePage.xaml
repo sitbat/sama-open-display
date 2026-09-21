@@ -87,9 +87,9 @@
                     <StackPanel Spacing="10">
                         <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="硬件操作" />
                         <Button x:Name="SendButton" HorizontalAlignment="Stretch" Style="{StaticResource AccentButtonStyle}" Content="发送当前画面" IsEnabled="False" Click="SendButton_Click" />
-                        <Button HorizontalAlignment="Stretch" Content="开始持续仪表盘" IsEnabled="False" />
+                        <Button x:Name="ContinuousButton" HorizontalAlignment="Stretch" Content="开始持续仪表盘" IsEnabled="False" Click="ContinuousButton_Click" />
                         <InfoBar x:Name="HardwareInfo" IsOpen="False" IsClosable="True" />
-                        <TextBlock TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="单帧发送会先显示确认窗口，并再次核验设备协议身份。持续仪表盘将在单帧实机验证后启用。" />
+                        <TextBlock TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="单帧和持续发送都会先显示确认窗口，并再次核验设备协议身份。持续模式按 USB 链路可承受的低帧率运行。" />
                     </StackPanel>
                 </Border>
             </StackPanel>

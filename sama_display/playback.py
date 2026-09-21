@@ -27,19 +27,37 @@ def play_frames(
     cancelled: Callable[[], bool] | None = None,
     on_frame: Callable[[int], None] | None = None,
 ) -> PlaybackStats:
-    """Display frames sequentially, never queueing faster than the USB link."""
+    """Send one full baseline followed by OEM CC deltas without queueing."""
     started = monotonic()
     count = 0
+    previous = None
+    frame_id = 0
     for frame in frames:
         if cancelled and cancelled():
             break
         frame_started = monotonic()
-        controller.display(
-            frame.image,
-            brightness=brightness,
-            panel_rotation=panel_rotation,
-            cancelled=cancelled,
-        )
+        try:
+            if previous is None:
+                controller.display(
+                    frame.image,
+                    brightness=brightness,
+                    panel_rotation=panel_rotation,
+                    cancelled=cancelled,
+                )
+            else:
+                changed = controller.update_frame(
+                    previous,
+                    frame.image,
+                    frame_id,
+                    cancelled=cancelled,
+                )
+                if changed:
+                    frame_id = (frame_id + 1) & 0xFFFFFFFF
+        except InterruptedError:
+            if cancelled and cancelled():
+                break
+            raise
+        previous = frame.image
         count += 1
         if on_frame:
             on_frame(count)
@@ -54,4 +72,3 @@ def play_frames(
             remaining -= pause
     elapsed = monotonic() - started
     return PlaybackStats(count, elapsed, count / elapsed if elapsed > 0 else 0.0)
-

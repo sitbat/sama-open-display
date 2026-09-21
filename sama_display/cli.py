@@ -63,10 +63,13 @@ def build_parser() -> argparse.ArgumentParser:
     play.add_argument("--write-hardware", action="store_true")
     live = sub.add_parser("dashboard-live", help="run the system dashboard with explicit hardware confirmation")
     live.add_argument("--seconds", type=float, default=30)
-    live.add_argument("--interval", type=float, default=2)
+    live.add_argument("--interval", type=float, default=0.5)
     live.add_argument("--brightness", type=int, default=60)
     live.add_argument("--device-id", required=True)
     live.add_argument("--write-hardware", action="store_true")
+    live.add_argument("--theme-id")
+    live.add_argument("--plugins-directory", type=Path, default=Path("plugins"))
+    live.add_argument("--stop-file", type=Path)
     sub.add_parser("protocol", help="print inferred full-frame header")
     plugin_list = sub.add_parser("plugin-list", help="list installed plugins as JSON")
     plugin_list.add_argument("--directory", type=Path, default=Path("plugins"))
@@ -227,11 +230,21 @@ def main(argv: list[str] | None = None) -> int:
             frames = iter_media(args.path, max_fps=args.max_fps)
             max_frames = args.max_frames or None
         else:
-            if args.seconds <= 0 or args.interval < 1:
-                raise SystemExit("seconds must be positive and interval must be at least 1 second")
+            if args.seconds <= 0 or args.interval < 0.1:
+                raise SystemExit("seconds must be positive and interval must be at least 0.1 second")
+            manager = PluginManager(args.plugins_directory)
+            themes = discover_themes(args.plugins_directory, manager.enabled_ids())
+            selected = next((theme for theme in themes if theme.theme_id == args.theme_id), None)
+            if args.theme_id and selected is None:
+                raise SystemExit(f"theme is not installed or enabled: {args.theme_id}")
+            data_service = DataService(manager.scan())
             count = max(1, int(args.seconds / args.interval))
             frames = (
-                MediaFrame(dashboard_frame(), round(args.interval * 1000), index)
+                MediaFrame(
+                    dashboard_frame(theme=selected, data=data_service.snapshot()),
+                    round(args.interval * 1000),
+                    index,
+                )
                 for index in range(count)
             )
             max_frames = count
@@ -247,6 +260,7 @@ def main(argv: list[str] | None = None) -> int:
                 frames,
                 brightness=args.brightness,
                 max_frames=max_frames,
+                cancelled=(lambda: bool(args.stop_file and args.stop_file.exists())),
                 on_frame=lambda count: print(f"frame {count}", file=sys.stderr, flush=True),
             )
             print(json.dumps({"frames": stats.frames, "elapsed_seconds": round(stats.elapsed_seconds, 3),
