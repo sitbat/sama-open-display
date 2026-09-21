@@ -10,9 +10,6 @@ $ReleaseDir = Join-Path $ProjectRoot 'dist\SamaRP-WinUI'
 
 Push-Location $ProjectRoot
 try {
-    & (Join-Path $PSScriptRoot 'build-bundled-plugins.ps1')
-    if (-not $?) { throw "Bundled plugin build failed" }
-
     if (-not (Test-Path -LiteralPath $Python)) {
         py -3 -m venv .venv
     }

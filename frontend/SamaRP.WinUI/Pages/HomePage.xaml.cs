@@ -12,6 +12,7 @@ public sealed partial class HomePage : Page
 {
     public ObservableCollection<ThemeInfo> Themes { get; } = [];
     private bool _loadingThemes;
+    private int _previewGeneration;
 
     public HomePage()
     {
@@ -35,8 +36,7 @@ public sealed partial class HomePage : Page
             Themes.Clear();
             foreach (ThemeInfo theme in themes)
                 Themes.Add(theme);
-            ThemePicker.SelectedItem = Themes.FirstOrDefault(theme =>
-                theme.PluginId == "org.samarpproject.system-dashboard") ?? Themes.FirstOrDefault();
+            ThemePicker.SelectedItem = Themes.FirstOrDefault();
             UpdateThemeDescription();
         }
         finally
@@ -54,6 +54,7 @@ public sealed partial class HomePage : Page
 
     private async Task RefreshPreviewAsync()
     {
+        int generation = ++_previewGeneration;
         PreviewProgress.IsActive = true;
         try
         {
@@ -63,7 +64,8 @@ public sealed partial class HomePage : Page
             using var stream = await file.OpenReadAsync();
             BitmapImage bitmap = new();
             await bitmap.SetSourceAsync(stream);
-            PreviewImage.Source = bitmap;
+            if (generation == _previewGeneration)
+                PreviewImage.Source = bitmap;
         }
         catch (Exception exception)
         {
@@ -73,7 +75,8 @@ public sealed partial class HomePage : Page
         }
         finally
         {
-            PreviewProgress.IsActive = false;
+            if (generation == _previewGeneration)
+                PreviewProgress.IsActive = false;
         }
     }
 

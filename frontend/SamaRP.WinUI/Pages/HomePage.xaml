@@ -23,25 +23,24 @@
             </StackPanel>
 
             <StackPanel Grid.Row="1" Spacing="14">
-                <Border Padding="18" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8">
+                <Border MinHeight="356" Padding="18" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8">
                     <StackPanel Spacing="12">
                         <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="内容" />
                         <RadioButton x:Name="ThemeOption" Content="使用主题" IsChecked="True" />
                         <ComboBox
                             x:Name="ThemePicker"
                             Header="主题选择"
+                            Height="64"
                             HorizontalAlignment="Stretch"
+                            MaxDropDownHeight="280"
                             SelectionChanged="ThemePicker_SelectionChanged">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate x:DataType="models:ThemeInfo">
-                                    <StackPanel>
-                                        <TextBlock Text="{x:Bind Name}" />
-                                        <TextBlock FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="{x:Bind SourceLabel}" />
-                                    </StackPanel>
+                                    <TextBlock Text="{x:Bind Name}" VerticalAlignment="Center" />
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
-                        <TextBlock x:Name="ThemeDescription" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <TextBlock x:Name="ThemeDescription" Height="40" MaxLines="2" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                         <RadioButton Content="加载图片 / 媒体" IsEnabled="False" />
                         <RadioButton Content="文字画面" IsEnabled="False" />
                         <Button HorizontalAlignment="Stretch" Content="刷新预览" Click="RefreshPreview_Click" />
