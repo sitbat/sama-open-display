@@ -1,5 +1,7 @@
 # SAMA Open Display 0.7.0 WinUI Preview
 
+> 历史版本记录；功能和待办均以 0.7.0 发布时为准。现行状态见 [项目状态](../PROJECT.md)。
+
 ## Highlights
 
 - First real C# WinUI 3 frontend using Windows App SDK 2.5.1 and .NET 10.

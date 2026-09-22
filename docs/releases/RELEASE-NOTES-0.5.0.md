@@ -1,5 +1,7 @@
 # SAMA Open Display 0.5.0
 
+> 历史版本记录；功能和待办均以 0.5.0 发布时为准。现行状态见 [项目状态](../PROJECT.md)。
+
 SAMA Open Display is an open-source tool for displaying custom content on
 compatible SAMA screen devices. It is an unofficial community project.
 

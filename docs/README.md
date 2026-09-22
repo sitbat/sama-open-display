@@ -1,9 +1,15 @@
-# 项目文档
+# 文档导航
 
-- [`PROJECT.md`](PROJECT.md)：项目目标、硬件基线、验收标准和里程碑。
-- [`hardware-validation/`](hardware-validation/)：HELLO、方向、全帧和差分更新的历次真机验证记录。
-- [`releases/`](releases/)：0.2.0 至 0.9.0 的历史发布说明。
-- [`../PROTOCOL.md`](../PROTOCOL.md)：当前设备协议、证据等级和已验证命令。
-- [`../PLUGIN_SPEC.md`](../PLUGIN_SPEC.md)：`.sodpkg` 插件格式、权限和依赖规范。
+需要安装、发送画面或构建程序时，先看[仓库首页](../README.md)。这里按用途收录项目资料：
 
-运行时预览、测试卡和构建产物写入 `outputs/`、`build/` 或 `dist/`，这些目录不属于版本化文档。
+| 文档 | 内容 |
+| --- | --- |
+| [项目状态与目标](PROJECT.md) | 当前功能、适配设备和待完成工作 |
+| [插件规范](../PLUGIN_SPEC.md) | `.sodpkg` 包、数据接口、布局主题和前置依赖 |
+| [设备协议](../PROTOCOL.md) | 全帧、扫描方向和差分更新的当前结论 |
+| [真机验证记录](hardware-validation/README.md) | 握手、方向、颜色、全帧和差分测试 |
+| [历史发布说明](releases/README.md) | 0.2.0 至 0.9.0 各版的功能和验证情况 |
+
+`hardware-validation/` 和 `releases/` 保存测试或发布当时的状态，其中的端口号、功能范围和操作流程不一定代表当前版本。现行行为以仓库首页、项目状态和当前代码为准。
+
+程序生成的预览、构建中间文件和发行目录位于 `outputs/`、`build/`、`dist/`，不属于版本化文档。

@@ -2,8 +2,7 @@ import unittest
 from PIL import Image
 
 from sama_display import WIDTH, HEIGHT
-from sama_display.media import MediaFrame
-from sama_display.playback import play_frames
+from sama_display.playback import DisplayFrame, play_frames
 
 
 class FakeController:
@@ -28,7 +27,7 @@ class InterruptingController:
 class PlaybackTests(unittest.TestCase):
     def test_frame_limit(self):
         controller = FakeController()
-        frames = [MediaFrame(Image.new("RGB", (WIDTH, HEIGHT)), 0, index) for index in range(4)]
+        frames = [DisplayFrame(Image.new("RGB", (WIDTH, HEIGHT)), 0, index) for index in range(4)]
         stats = play_frames(controller, frames, max_frames=2)
         self.assertEqual(stats.frames, 2)
         self.assertEqual(len(controller.images), 1)
@@ -37,14 +36,14 @@ class PlaybackTests(unittest.TestCase):
 
     def test_cancel_before_first_frame(self):
         controller = FakeController()
-        frames = [MediaFrame(Image.new("RGB", (WIDTH, HEIGHT)), 0, 0)]
+        frames = [DisplayFrame(Image.new("RGB", (WIDTH, HEIGHT)), 0, 0)]
         stats = play_frames(controller, frames, cancelled=lambda: True)
         self.assertEqual(stats.frames, 0)
         self.assertEqual(controller.images, [])
 
     def test_cancel_during_frame_stops_cleanly(self):
         controller = InterruptingController()
-        frames = [MediaFrame(Image.new("RGB", (WIDTH, HEIGHT)), 0, 0)]
+        frames = [DisplayFrame(Image.new("RGB", (WIDTH, HEIGHT)), 0, 0)]
         checks = iter((False, True))
         stats = play_frames(controller, frames, cancelled=lambda: next(checks, True))
         self.assertEqual(stats.frames, 0)

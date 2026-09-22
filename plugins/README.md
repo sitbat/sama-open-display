@@ -1,10 +1,7 @@
-# SAMA Open Display plugins
+# 插件目录
 
-This directory stores installed `.sodpkg` files and `plugins.json`, which
-contains enable/disable state. Packages stay external to `SAMAOpenDisplay.exe`.
+这里存放已安装的 `.sodpkg` 包和启停状态文件 `plugins.json`。发行包只附带系统指标数据接口；内置主题由程序提供，不在本目录预装主题包。
 
-The bundled system-metrics provider exposes permission-scoped, read-only
-computer data. Themes can list its plugin ID in `plugin.dependencies`.
+使用应用的“插件”页导入、批量管理和卸载包。自定义数据接口的 EXE 运行文件会在需要采样时提取到 `.runtime/`；仅当前主题声明为前置的数据接口会参与该主题的刷新。
 
-Display themes are built into the application or installed by the user. The
-release does not preinstall a theme plugin.
+包格式、权限和主题绑定方法见 [插件规范](../PLUGIN_SPEC.md)。

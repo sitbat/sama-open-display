@@ -188,7 +188,7 @@ class DisplayApp(tk.Tk):
     def _content_panel(self, panel) -> None:
         ttk.Label(panel, text="内容", style="PanelTitle.TLabel").pack(anchor="w", pady=(0, 10))
         ttk.Button(panel, text="系统仪表盘", style="Side.TButton", command=self.show_dashboard).pack(fill="x", pady=3)
-        ttk.Button(panel, text="加载图片", style="Side.TButton", command=self.load_media).pack(fill="x", pady=3)
+        ttk.Button(panel, text="加载图片", style="Side.TButton", command=self.load_image).pack(fill="x", pady=3)
         ttk.Button(panel, text="显示文本", style="Side.TButton", command=self.show_text_dialog).pack(fill="x", pady=3)
         ttk.Separator(panel).pack(fill="x", pady=16)
         ttk.Label(panel, text="显示主题", style="PanelTitle.TLabel").pack(anchor="w", pady=(0, 7))
@@ -296,7 +296,7 @@ class DisplayApp(tk.Tk):
         self.refresh_preview()
         self.animation_job = self.after(1000, self._dashboard_tick)
 
-    def load_media(self) -> None:
+    def load_image(self) -> None:
         path = filedialog.askopenfilename(filetypes=[("图片", "*.png *.jpg *.jpeg *.bmp *.webp"), ("全部文件", "*.*")])
         if not path:
             return
@@ -307,7 +307,7 @@ class DisplayApp(tk.Tk):
                 self.frame_image = fit_image(source, mode=self.fit_mode.get())
             self.refresh_preview()
         except Exception as exc:
-            messagebox.showerror("媒体加载失败", str(exc))
+            messagebox.showerror("图片加载失败", str(exc))
 
     def stop_preview_animation(self) -> None:
         if self.animation_job is not None:

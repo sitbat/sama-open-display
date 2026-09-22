@@ -17,7 +17,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-video = ["opencv-python>=4.8"]
 build = ["pyinstaller>=6"]
 
 [project.scripts]

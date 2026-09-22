@@ -1,7 +1,3 @@
-param(
-    [switch]$WithVideo
-)
-
 $ErrorActionPreference = 'Stop'
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
 $Python = Join-Path $ProjectRoot '.venv\Scripts\python.exe'
@@ -11,11 +7,7 @@ try {
         py -3 -m venv .venv
     }
     & $Python -m pip install --upgrade pip
-    if ($WithVideo) {
-        & $Python -m pip install '.[build,video]'
-    } else {
-        & $Python -m pip install '.[build]'
-    }
+    & $Python -m pip install '.[build]'
     & $Python -m unittest discover -v
     if ($LASTEXITCODE -ne 0) { throw "Unit tests failed with exit code $LASTEXITCODE" }
 
@@ -39,11 +31,6 @@ try {
         '--icon', 'assets\app-icon.ico',
         '--exclude-module', 'pytest'
     )
-    if ($WithVideo) {
-        $PyInstallerArgs += @('--collect-all', 'cv2')
-    } else {
-        $PyInstallerArgs += @('--exclude-module', 'cv2')
-    }
     $PyInstallerArgs += 'run_gui.py'
     & $Python -m PyInstaller @PyInstallerArgs
     if ($LASTEXITCODE -ne 0) { throw "PyInstaller failed with exit code $LASTEXITCODE" }

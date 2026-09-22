@@ -1,5 +1,7 @@
 # SAMA Open Display 0.9.0 Continuous Dashboard Preview
 
+> 历史版本记录；功能和待办均以 0.9.0 发布时为准。现行状态见 [项目状态](../PROJECT.md)。
+
 ## Changes
 
 - Adds confirmed start and explicit stop controls for the WinUI continuous

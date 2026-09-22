@@ -1,5 +1,7 @@
 # SAMA Open Display 0.6.0
 
+> 历史版本记录；功能和待办均以 0.6.0 发布时为准。现行状态见 [项目状态](../PROJECT.md)。
+
 ## Highlights
 
 - Dedicated plugin-center page with multi-select and batch installation.

@@ -1,13 +1,20 @@
-"""Rate-controlled frame playback shared by dashboards and media files."""
+"""Rate-controlled frame updates for the live dashboard."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from time import monotonic, sleep
 from collections.abc import Callable, Iterable
+from PIL import Image
 
 from .controller import DisplayController
-from .media import MediaFrame
+
+
+@dataclass(frozen=True)
+class DisplayFrame:
+    image: Image.Image
+    duration_ms: int
+    index: int
 
 
 @dataclass(frozen=True)
@@ -19,7 +26,7 @@ class PlaybackStats:
 
 def play_frames(
     controller: DisplayController,
-    frames: Iterable[MediaFrame],
+    frames: Iterable[DisplayFrame],
     *,
     brightness: int = 60,
     panel_rotation: int = 90,

@@ -12,9 +12,7 @@ from PIL import Image
 from .config import load_config
 from .controller import DisplayController, full_frame_plan
 from .device import discover_devices
-from .media import iter_media
-from .media import MediaFrame
-from .playback import play_frames
+from .playback import DisplayFrame, play_frames
 from .plugin import InstalledPlugin, PluginManager, inspect_plugin
 from .data_provider import DataService, load_provider_config
 from .protocol import display_bitmap_header
@@ -43,10 +41,6 @@ def build_parser() -> argparse.ArgumentParser:
     preview.add_argument("--fit", choices=("cover", "contain"))
     preview.add_argument("--theme-id")
     preview.add_argument("--plugins-directory", type=Path, default=Path("plugins"))
-    media = sub.add_parser("media-info", help="decode video frames without touching hardware")
-    media.add_argument("path", type=Path)
-    media.add_argument("--max-frames", type=int, default=10)
-    media.add_argument("--max-fps", type=float, default=10)
     plan = sub.add_parser("plan", help="inspect a full-frame byte plan without touching hardware")
     plan.add_argument("--image", type=Path)
     plan.add_argument("--brightness", type=int, default=70)
@@ -59,13 +53,6 @@ def build_parser() -> argparse.ArgumentParser:
     send.add_argument("--brightness", type=int, default=60)
     send.add_argument("--device-id", required=True, help="must exactly match the HELLO identity")
     send.add_argument("--write-hardware", action="store_true", help="required acknowledgement that COM5 will be written")
-    play = sub.add_parser("play", help="play video with explicit hardware confirmation")
-    play.add_argument("path", type=Path)
-    play.add_argument("--max-fps", type=float, default=0.8)
-    play.add_argument("--max-frames", type=int, default=0, help="0 means all frames")
-    play.add_argument("--brightness", type=int, default=60)
-    play.add_argument("--device-id", required=True)
-    play.add_argument("--write-hardware", action="store_true")
     live = sub.add_parser("dashboard-live", help="run the system dashboard with explicit hardware confirmation")
     live.add_argument("--seconds", type=float, default=30)
     live.add_argument("--interval", type=float, default=1.0)
@@ -162,14 +149,6 @@ def main(argv: list[str] | None = None) -> int:
         ]
         print(json.dumps(inventory, ensure_ascii=False))
         return 0
-    if args.command == "media-info":
-        frames = []
-        for frame in iter_media(args.path, max_fps=args.max_fps):
-            frames.append({"index": frame.index, "size": frame.image.size, "duration_ms": frame.duration_ms})
-            if len(frames) >= args.max_frames:
-                break
-        print(json.dumps({"path": str(args.path), "decoded_frames": frames}, indent=2))
-        return 0 if frames else 1
     if args.command == "plan":
         if args.image:
             with Image.open(args.image) as source:
@@ -225,36 +204,29 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         finally:
             controller.close()
-    if args.command in {"play", "dashboard-live"}:
+    if args.command == "dashboard-live":
         if not args.write_hardware:
             raise SystemExit("refusing hardware access: add --write-hardware after checking the target device")
-        if args.command == "play":
-            if not 0 < args.max_fps <= 1:
-                raise SystemExit("full-frame playback max-fps must be in (0, 1]")
-            frames = iter_media(args.path, max_fps=args.max_fps)
-            max_frames = args.max_frames or None
-        else:
-            if args.seconds <= 0 or args.interval < 0.1:
-                raise SystemExit("seconds must be positive and interval must be at least 0.1 second")
-            manager = PluginManager(args.plugins_directory)
-            themes = discover_themes(args.plugins_directory, manager.enabled_ids())
-            selected = next((theme for theme in themes if theme.theme_id == args.theme_id), None)
-            if args.theme_id and selected is None:
-                raise SystemExit(f"theme is not installed or enabled: {args.theme_id}")
-            data_service = DataService(manager.scan())
-            count = max(1, int(args.seconds / args.interval))
-            frames = (
-                MediaFrame(
-                    dashboard_frame(
-                        theme=selected,
-                        data=data_service.snapshot(selected.dependencies if selected else ()),
-                    ),
-                    round(args.interval * 1000),
-                    index,
-                )
-                for index in range(count)
+        if args.seconds <= 0 or args.interval < 0.1:
+            raise SystemExit("seconds must be positive and interval must be at least 0.1 second")
+        manager = PluginManager(args.plugins_directory)
+        themes = discover_themes(args.plugins_directory, manager.enabled_ids())
+        selected = next((theme for theme in themes if theme.theme_id == args.theme_id), None)
+        if args.theme_id and selected is None:
+            raise SystemExit(f"theme is not installed or enabled: {args.theme_id}")
+        data_service = DataService(manager.scan())
+        count = max(1, int(args.seconds / args.interval))
+        frames = (
+            DisplayFrame(
+                dashboard_frame(
+                    theme=selected,
+                    data=data_service.snapshot(selected.dependencies if selected else ()),
+                ),
+                round(args.interval * 1000),
+                index,
             )
-            max_frames = count
+            for index in range(count)
+        )
         controller = DisplayController()
         try:
             controller.connect(allow_hardware=True)
@@ -266,7 +238,7 @@ def main(argv: list[str] | None = None) -> int:
                 controller,
                 frames,
                 brightness=args.brightness,
-                max_frames=max_frames,
+                max_frames=count,
                 cancelled=(lambda: bool(args.stop_file and args.stop_file.exists())),
                 on_frame=lambda count: print(f"frame {count}", file=sys.stderr, flush=True),
             )

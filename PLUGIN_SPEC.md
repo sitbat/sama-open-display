@@ -1,17 +1,21 @@
-# SAMA Open Display Plugin Specification v2
+# `.sodpkg` 插件规范（schema 2）
 
-SAMA Open Display uses external ZIP packages with the `.sodpkg` extension. A
-package is one of exactly two kinds:
+SAMA Open Display 使用 ZIP 格式的 `.sodpkg` 文件。一个包只能是 `theme`（布局主题）或 `data-provider`（数据接口）。schema 1 包继续兼容；schema 2 增加自定义布局和可执行数据接口。
 
-- `data-provider`: exposes named data fields.
-- `theme`: defines a display layout and may depend on data providers.
+发行包的 `plugins/` 目录只预装系统指标数据接口，主题默认内置于程序。用户可在“插件”页批量导入、启停和卸载包。包和状态文件 `plugins/plugins.json` 位于主 EXE 外部。
 
-Schema 1 packages remain supported. Schema 2 adds external provider processes
-and free-form declarative layouts.
+## 包结构与清单
 
-## Common manifest
+文件必须放在 ZIP 根目录，不能只压入一个上级文件夹。以数据接口为例：
 
-Every package contains `manifest.toml` at its root:
+```text
+sensor.sodpkg
+├── manifest.toml
+├── provider.toml
+└── sensor.exe
+```
+
+`manifest.toml`：
 
 ```toml
 [plugin]
@@ -22,45 +26,23 @@ version = "1.0.0"
 author = "Example author"
 kind = "data-provider"
 entry = "provider.toml"
-description = "Provides custom sensor values"
+description = "Provides sensor values"
 dependencies = []
 permissions = ["code.execute"]
 ```
 
-IDs are stable lowercase identifiers and versions use semantic versioning.
-Theme dependencies must point to installed, enabled `data-provider` plugins.
-The host refuses to enable, disable or uninstall packages when doing so would
-break this dependency graph. Executable providers are invoked only while the
-active theme declares them as prerequisites; merely enabling one does not run
-it in the background.
+`id` 使用 3–64 个小写字母、数字、点、下划线或连字符，以字母或数字开头；版本使用 `主.次.修订` 格式，可带语义化版本后缀。`entry` 必须是包根目录中的文件。`dependencies` 是插件 ID 数组；主题的前置只能是数据接口。前置缺失或未启用时，主题不会出现在可选列表中；停用或卸载正在被启用主题使用的数据接口会被阻止。
 
-## Data-provider plugins
+## 数据接口
 
-### Built-in adapter
-
-The bundled schema-1 provider uses `builtin.system`. It exposes only the
-permissions present in its manifest:
-
-- `system.cpu`, `system.memory`, `system.uptime`
-- `storage.usage`, `network.counters`, `process.summary`
+内置的 schema 1 `builtin.system` 接口通过清单权限选择只读系统字段：`system.cpu`、`system.memory`、`system.uptime`、`storage.usage`、`network.counters`、`process.summary`。它的 `provider.toml` 仅需：
 
 ```toml
 [provider]
 adapter = "builtin.system"
 ```
 
-### External process adapter
-
-Schema 2 providers can ship a Windows executable at the package root:
-
-```text
-sensor.sodpkg
-├── manifest.toml
-├── provider.toml
-└── sensor.exe
-```
-
-`provider.toml` declares the executable, timeout and public interface:
+自定义数据接口使用 schema 2 的 `external.process`，清单必须包含 `code.execute` 权限。`provider.toml` 示例：
 
 ```toml
 [provider]
@@ -75,38 +57,27 @@ profile = "string"
 alarm = "boolean"
 ```
 
-The manifest must use schema 2 and request `code.execute`. The host sends one
-JSON request on standard input:
+`command` 是包根目录的 Windows `.exe` 文件，建议做成无额外文件依赖的单文件程序；超时值允许 100–10000 毫秒。`[fields]` 至少声明一个字段。字段类型为 `number`（有限数值）、`integer`、`string` 或 `boolean`，字段名最长 64 个字符。
+
+每次调用时，宿主在标准输入发送一条 JSON 请求：
 
 ```json
 {"protocol": 1, "plugin_id": "org.example.sensor"}
 ```
 
-The process writes one JSON object to standard output and exits with code 0:
+程序向标准输出写一条 JSON 对象并以退出码 0 结束，例如：
 
 ```json
 {"temperature": 52.5, "fan_rpm": 1180, "profile": "Silent", "alarm": false}
 ```
 
-Returned keys must be declared in `[fields]` and values must match their types.
-The host namespaces them before exposing them to themes:
+返回字段只能是 `[fields]` 中声明的名称，值必须符合类型。宿主会加上插件 ID 前缀，主题可绑定 `org.example.sensor.temperature` 等字段。返回值超过 1 MB、超时、退出失败或类型不符时，该次采样会被跳过，画面继续生成。运行中的主题只调用自己声明为前置的可执行接口；命令行 `metrics` 会主动采样所有已启用的数据接口。
 
-```text
-org.example.sensor.temperature
-org.example.sensor.fan_rpm
-org.example.sensor.profile
-org.example.sensor.alarm
-```
+外部 EXE 会被提取到 `plugins/.runtime/<插件 ID>/` 下，更新或卸载插件时清理。它在独立进程中运行，但仍具有当前 Windows 用户的访问权限，并非系统级沙箱。安装界面会显示执行权限警告；只安装可信来源的可执行数据插件。
 
-The executable runs in a separate process with redirected standard streams and
-a 100-10000 ms timeout. This protects the main process from crashes, but it is
-not an OS sandbox: the executable still has the current Windows user's access.
-The plugin center therefore shows an explicit executable-code warning before
-installation. Distribute providers as self-contained single-file executables.
+## 自定义布局主题
 
-## Free-layout theme plugins
-
-A schema-2 theme declares its provider prerequisites and uses `preset="custom"`:
+主题包至少包含 `manifest.toml` 与 `theme.toml`。下面的清单把上面的数据接口声明为前置：
 
 ```toml
 [plugin]
@@ -121,7 +92,7 @@ dependencies = ["org.example.sensor"]
 permissions = []
 ```
 
-The layout canvas is 1568 x 720. Elements are painted in declaration order:
+`theme.toml` 使用 1568 × 720 画布。元素按文件中的先后顺序绘制；主题可以使用静态文本，也可以绑定时间或前置接口的数据：
 
 ```toml
 [theme]
@@ -130,7 +101,6 @@ name = "Sensor Screen"
 
 [display]
 preset = "custom"
-background_image = "background.png" # optional
 
 [palette]
 background = "#07111f"
@@ -177,37 +147,38 @@ background = "surface_alt"
 radius = 17
 
 [[element]]
-type = "image"
-x = 700
-y = 40
-width = 800
-height = 640
-asset = "illustration.png"
-fit = "contain"
+type = "text"
+x = 75
+y = 325
+text = "Sensor dashboard"
+font_size = 36
 ```
 
-Supported elements:
+支持的元素：
 
-- `rectangle`: position, size, background and corner radius.
-- `text`: static text or a `bind`, number format, prefix/suffix, font size,
-  weight, color and left/center/right alignment.
-- `progress`: numeric binding, min/max, colors and corner radius.
-- `image`: package-root image asset with `cover` or `contain` fitting.
+| `type` | 主要字段 | 用途 |
+| --- | --- | --- |
+| `rectangle` | `x`, `y`, `width`, `height`, `background`, `radius` | 色块 |
+| `text` | `text` 或 `bind`, `format`, `prefix`, `suffix`, `font_size`, `bold`, `align`, `color` | 静态或动态文字 |
+| `progress` | `bind`, `minimum`, `maximum`, `color`, `background`, `radius` | 数值进度条 |
+| `image` | `asset`, `fit`, `x`, `y`, `width`, `height` | 包根目录的图片；`fit` 为 `cover` 或 `contain` |
 
-Colors may be `#RRGGBB` or a palette name. In addition to provider fields,
-themes may bind `clock.time`, `clock.time_seconds`, `clock.date`,
-`clock.weekday` and `clock.timestamp`.
+矩形、进度条和图片都必须有正尺寸，元素不能超出画布。颜色可写 `#RRGGBB` 或使用上表中的调色板字段名。图片元素的 `asset` 必须位于包根目录；整张背景图片可在 `[display]` 中用 `background_image = "background.png"` 指定。
 
-Legacy presets `dashboard`, `minimal_clock` and `system_grid` remain available.
+除了数据接口字段，`bind` 还可使用 `clock.time`、`clock.time_seconds`、`clock.date`、`clock.weekday` 和 `clock.timestamp`。旧主题仍可使用 `dashboard`、`minimal_clock` 或 `system_grid` 预设；`custom` 需要 schema 2。声明式主题不运行代码。
 
-## Validation and storage
+## 制作和检查包
 
-- Package size is limited to 20 MB and expanded content to 50 MB.
-- Layouts are limited to 128 elements and validated against the 1568x720 canvas.
-- Image assets must be package-root files and may not exceed 12 MB each.
-- Unknown schemas, plugin kinds, permissions and manifest options are rejected.
-- Provider output is type checked and undeclared fields are rejected.
-- Packages remain outside the main EXE in the `plugins` directory.
-- Provider executables are materialized under `plugins/.runtime` and removed on
-  update or uninstall.
-- Declarative theme packages never execute code.
+以 PowerShell 为例，在包含 `manifest.toml` 和入口文件的目录中压缩根目录文件，再将生成的 ZIP 改为 `.sodpkg`。先检查包结构，再导入：
+
+```powershell
+Compress-Archive -Path .\manifest.toml,.\theme.toml -DestinationPath .\sensor-screen.zip
+Rename-Item .\sensor-screen.zip sensor-screen.sodpkg
+python -m sama_display plugin-inspect .\sensor-screen.sodpkg
+python -m sama_display plugin-install .\sensor-screen.sodpkg --directory plugins
+python -m sama_display plugin-list --directory plugins
+```
+
+若主题依赖数据接口，先安装并启用数据接口，再安装主题。`plugin-inspect` 验证包本身；`plugin-list` 可检查依赖问题；`theme-list --directory plugins` 可确认主题是否进入可选列表。
+
+包压缩后上限为 20 MB，解压后总量上限为 50 MB；自定义布局最多 128 个元素，单张图片上限为 12 MB。未知 schema、类型、权限和清单选项会被拒绝。

@@ -20,7 +20,7 @@ try {
 
     & $Python -m PyInstaller --noconfirm --clean --console --onedir `
         --contents-directory runtime --name SAMAOpenDisplay.Backend `
-        --exclude-module cv2 --exclude-module tkinter run_backend.py
+        --exclude-module tkinter run_backend.py
     if ($LASTEXITCODE -ne 0) { throw "Backend build failed with exit code $LASTEXITCODE" }
 
     $env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE = '1'

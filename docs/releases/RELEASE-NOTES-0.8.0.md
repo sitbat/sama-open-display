@@ -1,5 +1,7 @@
 # SAMA Open Display 0.8.0 WinUI Hardware Gate
 
+> 历史版本记录；功能和待办均以 0.8.0 发布时为准。现行状态见 [项目状态](../PROJECT.md)。
+
 ## Changes
 
 - Enables the WinUI `发送当前画面` button only after read-only USB detection

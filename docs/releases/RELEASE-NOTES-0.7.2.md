@@ -1,5 +1,7 @@
 # SAMA Open Display 0.7.2 Stable Theme Picker
 
+> 历史版本记录；功能和待办均以 0.7.2 发布时为准。现行状态见 [项目状态](../PROJECT.md)。
+
 ## Changes
 
 - Keeps the `内容` section and its `使用主题` content mode.
