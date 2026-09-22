@@ -1,5 +1,6 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
-     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
   <Package Name="SAMA Open Display"
            Manufacturer="SAMA Open Display contributors"
            Version="1.0.0"
@@ -11,7 +12,9 @@
     <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
 
     <StandardDirectory Id="ProgramFiles64Folder">
-      <Directory Id="INSTALLFOLDER" Name="SAMA Open Display" />
+      <Directory Id="INSTALLFOLDER" Name="SAMA Open Display">
+        <Directory Id="PluginFolder" Name="plugins" />
+      </Directory>
     </StandardDirectory>
     <StandardDirectory Id="ProgramMenuFolder">
       <Directory Id="ApplicationProgramsFolder" Name="SAMA Open Display" />
@@ -19,6 +22,15 @@
 
     <Component Id="MainExecutable" Directory="INSTALLFOLDER" Guid="*">
       <File Id="MainExecutableFile" Source="$(var.PayloadRoot)\SAMAOpenDisplay.exe" KeyPath="yes" />
+    </Component>
+    <Component Id="WritablePluginFolder" Directory="PluginFolder" Guid="*">
+      <CreateFolder>
+        <!-- Only plugin packages and state are shared/writable, never the app binaries. -->
+        <util:PermissionEx User="[WIX_ACCOUNT_USERS]" GenericWrite="yes"
+                           CreateFile="yes" CreateChild="yes" Delete="yes" DeleteChild="yes" />
+      </CreateFolder>
+      <RegistryValue Root="HKLM" Key="Software\SAMA Open Display"
+                     Name="WritablePluginFolder" Type="integer" Value="1" KeyPath="yes" />
     </Component>
     <Component Id="StartMenuFolder" Directory="ApplicationProgramsFolder" Guid="*">
       <Shortcut Id="StartMenuShortcut" Name="SAMA Open Display"
@@ -31,12 +43,16 @@
     <Icon Id="AppIcon" SourceFile="$(var.PayloadRoot)\Assets\AppIcon.ico" />
     <Property Id="ARPPRODUCTICON" Value="AppIcon" />
     <Property Id="ARPURLINFOABOUT" Value="https://github.com/sitbat/sama-open-display" />
+    <util:QueryWindowsWellKnownSIDs />
 
     <Feature Id="Complete" Title="SAMA Open Display" Level="1">
       <Files Directory="INSTALLFOLDER" Include="$(var.PayloadRoot)\**">
         <Exclude Files="$(var.PayloadRoot)\SAMAOpenDisplay.exe" />
+        <Exclude Files="$(var.PayloadRoot)\plugins\**" />
       </Files>
+      <Files Directory="PluginFolder" Include="$(var.PayloadRoot)\plugins\**" />
       <ComponentRef Id="MainExecutable" />
+      <ComponentRef Id="WritablePluginFolder" />
       <ComponentRef Id="StartMenuFolder" />
     </Feature>
     <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />

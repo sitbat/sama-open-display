@@ -19,7 +19,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $Payload 'SAMAOpenDisplay.exe'))) {
 }
 
 & (Join-Path $PSScriptRoot 'generate-msi-assets.ps1') -OutputDirectory $InstallerAssets
-& $Wix build $Installer -arch x64 -culture zh-CN -ext WixToolset.UI.wixext/6.0.0 `
+& $Wix build $Installer -arch x64 -culture zh-CN -ext WixToolset.UI.wixext/6.0.0 -ext WixToolset.Util.wixext/6.0.0 `
     -d "PayloadRoot=$Payload" -d "InstallerAssets=$InstallerAssets" -out $Output -pdbtype none
 if ($LASTEXITCODE -ne 0) { throw "MSI build failed with exit code $LASTEXITCODE" }
 

@@ -31,6 +31,7 @@ public sealed partial class HomePage : Page
     private string _textContent = "你好，SAMA Open Display";
     private bool _changingContentMode;
     private bool _initialized;
+    private bool _hasNavigatedOnce;
 
     public HomePage()
     {
@@ -44,16 +45,30 @@ public sealed partial class HomePage : Page
     private async void HomePage_Loaded(object sender, RoutedEventArgs e)
     {
         if (_initialized)
-        {
-            UpdateHardwareAvailability();
             return;
-        }
 
         _initialized = true;
         await LoadThemesAsync();
         await Task.WhenAll(RefreshPreviewAsync(), DetectAsync());
         if (App.Settings.Current.StartSendingOnLaunch)
             await StartDashboardAsync(showUnavailableStatus: true);
+    }
+
+    protected override async void OnNavigatedTo(Microsoft.UI.Xaml.Navigation.NavigationEventArgs e)
+    {
+        base.OnNavigatedTo(e);
+        if (!_hasNavigatedOnce)
+        {
+            _hasNavigatedOnce = true;
+            return;
+        }
+
+        // The page is cached across navigation, so re-read plugin themes every time
+        // it is shown after a plugin was installed, enabled, disabled, or removed.
+        await LoadThemesAsync();
+        if (_contentMode == ContentMode.Theme)
+            await RefreshPreviewAsync();
+        UpdateHardwareAvailability();
     }
 
     private async Task LoadThemesAsync()

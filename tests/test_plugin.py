@@ -27,6 +27,19 @@ class PluginTests(unittest.TestCase):
             self.assertEqual(plugin.plugin_id, "org.test.theme")
             self.assertEqual(plugin.kind, "theme")
 
+    def test_install_copies_package_into_selected_plugins_directory(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "import.sodpkg"
+            destination = root / "installed"
+            self._package(source, "org.test.imported")
+
+            PluginManager(destination).install_many([source])
+
+            copied = destination / "org.test.imported.sodpkg"
+            self.assertEqual(copied.read_bytes(), source.read_bytes())
+            self.assertTrue((destination / "plugins.json").is_file())
+
     def test_batch_state_respects_dependencies(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

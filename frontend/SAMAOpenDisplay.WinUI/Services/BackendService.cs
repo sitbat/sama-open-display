@@ -22,8 +22,8 @@ public sealed class BackendService
         if (File.Exists(bundledBackend))
         {
             RootDirectory = AppContext.BaseDirectory;
-            PluginDirectory = Path.Combine(GetDataDirectory(), "plugins");
-            MigrateBundledPlugins(PluginDirectory);
+            PluginDirectory = Path.Combine(RootDirectory, "plugins");
+            MigrateUserPlugins(PluginDirectory);
             UsesPythonModule = false;
             PythonExecutable = bundledBackend;
             return;
@@ -212,23 +212,29 @@ public sealed class BackendService
             : Path.GetFullPath(configuredDataDirectory);
     }
 
-    private static void MigrateBundledPlugins(string destination)
+    private static void MigrateUserPlugins(string destination)
     {
-        // Installed app files may be read-only for the current user. Keep user-managed
-        // plugin packages and their enabled state outside the installation directory.
-        if (Directory.Exists(destination))
+        // Earlier builds kept imported packages in the current user's data directory.
+        // Import them once into the machine-shared plugins folder without deleting the
+        // originals, so an upgrade does not silently lose installed themes/providers.
+        string dataDirectory = GetDataDirectory();
+        string source = Path.Combine(dataDirectory, "plugins");
+        string marker = Path.Combine(dataDirectory, "shared-plugins-migrated-v1");
+        if (File.Exists(marker) || !Directory.Exists(source))
             return;
 
         Directory.CreateDirectory(destination);
-        string bundled = Path.Combine(AppContext.BaseDirectory, "plugins");
-        if (!Directory.Exists(bundled))
-            return;
-
-        foreach (string file in Directory.EnumerateFiles(bundled, "*.sodpkg"))
-            File.Copy(file, Path.Combine(destination, Path.GetFileName(file)), overwrite: false);
-        string state = Path.Combine(bundled, "plugins.json");
-        if (File.Exists(state))
-            File.Copy(state, Path.Combine(destination, "plugins.json"), overwrite: false);
+        foreach (string file in Directory.EnumerateFiles(source, "*.sodpkg"))
+        {
+            string target = Path.Combine(destination, Path.GetFileName(file));
+            if (!File.Exists(target))
+                File.Copy(file, target);
+        }
+        string state = Path.Combine(source, "plugins.json");
+        string targetState = Path.Combine(destination, "plugins.json");
+        if (File.Exists(state) && !File.Exists(targetState))
+            File.Copy(state, targetState);
+        File.WriteAllText(marker, "Migrated legacy per-user plugins to the shared installation directory.");
     }
 
     private async Task<string> RenderPreviewAsync(params string[] contentArguments)
