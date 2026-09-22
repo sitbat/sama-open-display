@@ -10,6 +10,11 @@ public sealed class AppSettings
     public bool StartSendingOnLaunch { get; set; }
     public bool MinimizeToTray { get; set; } = true;
     public bool CloseToTray { get; set; } = true;
+    public string DisplayContentMode { get; set; } = "theme";
+    public string? SelectedThemeId { get; set; }
+    public string? SelectedImagePath { get; set; }
+    public string DisplayTextContent { get; set; } = "你好，SAMA Open Display";
+    public string DisplayFitMode { get; set; } = "cover";
 }
 
 public sealed class AppSettingsService

@@ -37,6 +37,7 @@ public sealed partial class HomePage : Page
         InitializeComponent();
         NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Required;
         ThemePicker.ItemsSource = Themes;
+        RestoreDisplayState();
         Loaded += HomePage_Loaded;
     }
 
@@ -64,12 +65,77 @@ public sealed partial class HomePage : Page
             Themes.Clear();
             foreach (ThemeInfo theme in themes)
                 Themes.Add(theme);
-            ThemePicker.SelectedItem = Themes.FirstOrDefault();
+            string? selectedThemeId = App.Settings.Current.SelectedThemeId;
+            ThemePicker.SelectedItem = Themes.FirstOrDefault(theme =>
+                string.Equals(theme.Id, selectedThemeId, StringComparison.OrdinalIgnoreCase)) ?? Themes.FirstOrDefault();
             UpdateThemeDescription();
         }
         finally
         {
             _loadingThemes = false;
+        }
+        PersistDisplayState();
+    }
+
+    private void RestoreDisplayState()
+    {
+        AppSettings settings = App.Settings.Current;
+        _selectedImagePath = settings.SelectedImagePath;
+        _textContent = string.IsNullOrWhiteSpace(settings.DisplayTextContent)
+            ? "你好，SAMA Open Display"
+            : settings.DisplayTextContent;
+        string restoredMode = settings.DisplayContentMode?.ToLowerInvariant() ?? "theme";
+        bool restoredImageExists = !string.IsNullOrWhiteSpace(_selectedImagePath) && File.Exists(_selectedImagePath);
+        _contentMode = restoredMode switch
+        {
+            "image" when restoredImageExists => ContentMode.Image,
+            "text" => ContentMode.Text,
+            _ => ContentMode.Theme,
+        };
+        if (restoredMode == "image" && !restoredImageExists)
+            _selectedImagePath = null;
+        FitPicker.SelectedIndex = string.Equals(settings.DisplayFitMode, "contain", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
+
+        _changingContentMode = true;
+        ThemeOption.IsChecked = _contentMode == ContentMode.Theme;
+        ImageOption.IsChecked = _contentMode == ContentMode.Image;
+        TextOption.IsChecked = _contentMode == ContentMode.Text;
+        _changingContentMode = false;
+
+        ImageDescription.Visibility = _contentMode == ContentMode.Image ? Visibility.Visible : Visibility.Collapsed;
+        ChooseImageButton.Visibility = ImageDescription.Visibility;
+        if (_contentMode == ContentMode.Image)
+            ImageDescription.Text = Path.GetFileName(_selectedImagePath);
+        TextDescription.Visibility = _contentMode == ContentMode.Text ? Visibility.Visible : Visibility.Collapsed;
+        EditTextButton.Visibility = TextDescription.Visibility;
+        if (_contentMode == ContentMode.Text)
+            TextDescription.Text = _textContent.ReplaceLineEndings(" ");
+    }
+
+    private void PersistDisplayState()
+    {
+        AppSettings settings = App.Settings.Current;
+        settings.DisplayContentMode = _contentMode switch
+        {
+            ContentMode.Image => "image",
+            ContentMode.Text => "text",
+            _ => "theme",
+        };
+        settings.SelectedThemeId = (ThemePicker.SelectedItem as ThemeInfo)?.Id;
+        settings.SelectedImagePath = _selectedImagePath;
+        settings.DisplayTextContent = _textContent;
+        settings.DisplayFitMode = CurrentFitMode();
+        try
+        {
+            App.Settings.Save();
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            HardwareInfo.IsOpen = true;
+            HardwareInfo.IsClosable = true;
+            HardwareInfo.Severity = InfoBarSeverity.Warning;
+            HardwareInfo.Title = "无法保存显示设置";
+            HardwareInfo.Message = exception.Message;
         }
     }
 
@@ -153,7 +219,10 @@ public sealed partial class HomePage : Page
     {
         UpdateThemeDescription();
         if (!_loadingThemes && IsLoaded)
+        {
+            PersistDisplayState();
             await RefreshPreviewAsync();
+        }
     }
 
     private string CurrentFitMode() => FitPicker.SelectedIndex == 1 ? "contain" : "cover";
@@ -167,6 +236,7 @@ public sealed partial class HomePage : Page
         ChooseImageButton.Visibility = Visibility.Collapsed;
         TextDescription.Visibility = Visibility.Collapsed;
         EditTextButton.Visibility = Visibility.Collapsed;
+        PersistDisplayState();
         InvalidatePreview();
         await RefreshPreviewAsync();
     }
@@ -198,6 +268,7 @@ public sealed partial class HomePage : Page
         ChooseImageButton.Visibility = Visibility.Visible;
         TextDescription.Visibility = Visibility.Collapsed;
         EditTextButton.Visibility = Visibility.Collapsed;
+        PersistDisplayState();
         InvalidatePreview();
         await RefreshPreviewAsync();
         return true;
@@ -243,6 +314,7 @@ public sealed partial class HomePage : Page
         EditTextButton.Visibility = Visibility.Visible;
         ImageDescription.Visibility = Visibility.Collapsed;
         ChooseImageButton.Visibility = Visibility.Collapsed;
+        PersistDisplayState();
         InvalidatePreview();
         await RefreshPreviewAsync();
         return true;
@@ -254,6 +326,7 @@ public sealed partial class HomePage : Page
     {
         if (IsLoaded && _contentMode == ContentMode.Image && !string.IsNullOrWhiteSpace(_selectedImagePath))
         {
+            PersistDisplayState();
             InvalidatePreview();
             await RefreshPreviewAsync();
         }
@@ -325,7 +398,7 @@ public sealed partial class HomePage : Page
 
     private async Task StartDashboardAsync(bool showUnavailableStatus)
     {
-        if (_displayDevice is null || ThemePicker.SelectedItem is not ThemeInfo theme)
+        if (_contentMode != ContentMode.Theme || _displayDevice is null || ThemePicker.SelectedItem is not ThemeInfo theme)
         {
             if (showUnavailableStatus)
             {
@@ -333,9 +406,11 @@ public sealed partial class HomePage : Page
                 HardwareInfo.IsClosable = true;
                 HardwareInfo.Severity = InfoBarSeverity.Warning;
                 HardwareInfo.Title = "未能自动开始持续发送";
-                HardwareInfo.Message = _displayDevice is null
-                    ? "启动时未检测到目标小屏，请连接设备后手动开始。"
-                    : "当前没有可用主题，请检查主题或插件设置。";
+                HardwareInfo.Message = _contentMode != ContentMode.Theme
+                    ? "持续发送仅适用于主题；已恢复上次的静态内容，可手动发送当前画面。"
+                    : _displayDevice is null
+                        ? "启动时未检测到目标小屏，请连接设备后手动开始。"
+                        : "当前没有可用主题，请检查主题或插件设置。";
             }
             return;
         }
