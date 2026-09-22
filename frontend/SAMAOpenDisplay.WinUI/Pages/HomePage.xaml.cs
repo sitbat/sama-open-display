@@ -30,17 +30,25 @@ public sealed partial class HomePage : Page
     private string? _selectedImagePath;
     private string _textContent = "你好，SAMA Open Display";
     private bool _changingContentMode;
+    private bool _initialized;
 
     public HomePage()
     {
         InitializeComponent();
+        NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Required;
         ThemePicker.ItemsSource = Themes;
         Loaded += HomePage_Loaded;
-        Unloaded += (_, _) => _dashboardCancellation?.Cancel();
     }
 
     private async void HomePage_Loaded(object sender, RoutedEventArgs e)
     {
+        if (_initialized)
+        {
+            UpdateHardwareAvailability();
+            return;
+        }
+
+        _initialized = true;
         await LoadThemesAsync();
         await Task.WhenAll(RefreshPreviewAsync(), DetectAsync());
     }

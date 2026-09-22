@@ -65,6 +65,7 @@ public sealed partial class MainWindow : Window
     public void ExitApplication()
     {
         _isExiting = true;
+        BackendService.Current.RequestDashboardStop();
         _trayIcon.Dispose();
         Close();
     }
@@ -78,6 +79,7 @@ public sealed partial class MainWindow : Window
             return;
         }
 
+        BackendService.Current.RequestDashboardStop();
         _trayIcon.Dispose();
     }
 

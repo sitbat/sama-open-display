@@ -23,13 +23,13 @@ try {
         --exclude-module cv2 --exclude-module tkinter run_backend.py
     if ($LASTEXITCODE -ne 0) { throw "Backend build failed with exit code $LASTEXITCODE" }
 
-    $env:DOTNET_CLI_HOME = Join-Path $ProjectRoot 'work\dotnet-home'
     $env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE = '1'
     $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
     # The WinUI compiler places the app XBF files and MRT resource index in the
     # Release build directory. `dotnet publish -o` currently drops those files,
     # which produces an apparently complete folder that crashes at startup.
-    & dotnet build $FrontendProject -c Release -r win-x64 --self-contained true -p:RestoreIgnoreFailedSources=true
+    & dotnet build $FrontendProject -c Release -r win-x64 --self-contained true `
+        -p:NuGetAudit=false -p:RestoreIgnoreFailedSources=true
     if ($LASTEXITCODE -ne 0) { throw "WinUI build failed with exit code $LASTEXITCODE" }
 
     if (-not (Test-Path -LiteralPath (Join-Path $FrontendBuild 'SAMAOpenDisplay.pri'))) {

@@ -13,6 +13,8 @@ public sealed class BackendService
     public string PluginDirectory { get; }
     private string PythonExecutable { get; }
     private bool UsesPythonModule { get; }
+    private readonly object _dashboardLock = new();
+    private string? _activeDashboardStopFile;
 
     private BackendService()
     {
@@ -139,6 +141,12 @@ public sealed class BackendService
         string stopDirectory = Path.Combine(GetDataDirectory(), "control");
         Directory.CreateDirectory(stopDirectory);
         string stopFile = Path.Combine(stopDirectory, $"dashboard-stop-{Guid.NewGuid():N}.signal");
+        lock (_dashboardLock)
+        {
+            if (_activeDashboardStopFile is not null)
+                throw new InvalidOperationException("已有持续发送任务正在运行。");
+            _activeDashboardStopFile = stopFile;
+        }
         List<string> arguments = [
             "dashboard-live",
             "--seconds", "43200",
@@ -155,24 +163,37 @@ public sealed class BackendService
             arguments.Add(themeId);
         }
 
-        using CancellationTokenRegistration registration = cancellationToken.Register(() =>
-        {
-            try
-            {
-                File.WriteAllText(stopFile, "stop");
-            }
-            catch (IOException)
-            {
-                // The backend may already have completed and removed the need for a stop signal.
-            }
-        });
+        using CancellationTokenRegistration registration = cancellationToken.Register(RequestDashboardStop);
         try
         {
             return await RunAsync([.. arguments]);
         }
         finally
         {
+            lock (_dashboardLock)
+            {
+                if (string.Equals(_activeDashboardStopFile, stopFile, StringComparison.OrdinalIgnoreCase))
+                    _activeDashboardStopFile = null;
+            }
             try { File.Delete(stopFile); } catch (IOException) { }
+        }
+    }
+
+    public void RequestDashboardStop()
+    {
+        string? stopFile;
+        lock (_dashboardLock)
+            stopFile = _activeDashboardStopFile;
+        if (string.IsNullOrWhiteSpace(stopFile))
+            return;
+
+        try
+        {
+            File.WriteAllText(stopFile, "stop");
+        }
+        catch (IOException)
+        {
+            // The backend may already have completed and removed the need for a stop signal.
         }
     }
 
