@@ -1,6 +1,8 @@
 import tempfile
 import unittest
 from pathlib import Path
+import subprocess
+from unittest.mock import patch
 import zipfile
 
 from sama_display.data_provider import DataService
@@ -40,6 +42,28 @@ class DataProviderTests(unittest.TestCase):
             self.assertIn("system.uptime.seconds", values)
             self.assertNotIn("system.memory.percent", values)
             self.assertNotIn("storage.root.percent", values)
+
+    def test_external_provider_returns_namespaced_declared_fields(self):
+        manifest = b'''[plugin]\nschema=2\nid="org.test.sensor"\nname="Sensor"\nversion="1.0.0"\nauthor="Tests"\nkind="data-provider"\nentry="provider.toml"\npermissions=["code.execute"]\n'''
+        provider = b'''[provider]\nadapter="external.process"\ncommand="sensor.exe"\ntimeout_ms=500\n[fields]\ntemperature="number"\nlabel="string"\n'''
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "provider.sodpkg"
+            with zipfile.ZipFile(source, "w") as package:
+                package.writestr("manifest.toml", manifest)
+                package.writestr("provider.toml", provider)
+                package.writestr("sensor.exe", b"test executable")
+            manager = PluginManager(root / "installed")
+            manager.install_many([source])
+            completed = subprocess.CompletedProcess([], 0, '{"temperature": 42.5, "label": "CPU"}', "")
+            with patch("sama_display.data_provider.subprocess.run", return_value=completed) as run:
+                service = DataService(manager.scan())
+                self.assertEqual(service.snapshot(()), {})
+                run.assert_not_called()
+                values = service.snapshot(("org.test.sensor",))
+                run.assert_called_once()
+            self.assertEqual(values["org.test.sensor.temperature"], 42.5)
+            self.assertEqual(values["org.test.sensor.label"], "CPU")
 
 
 if __name__ == "__main__":

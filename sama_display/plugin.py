@@ -19,8 +19,11 @@ PLUGIN_EXTENSION = ".sodpkg"
 PLUGIN_KINDS = {"theme", "data-provider"}
 KNOWN_PERMISSIONS = {
     "system.cpu", "system.memory", "system.uptime", "storage.usage",
-    "network.counters", "process.summary",
+    "network.counters", "process.summary", "code.execute",
 }
+SUPPORTED_SCHEMAS = {1, 2}
+MAX_PACKAGE_SIZE = 20 * 1024 * 1024
+MAX_UNCOMPRESSED_SIZE = 50 * 1024 * 1024
 
 
 @dataclass(frozen=True)
@@ -67,7 +70,7 @@ def load_manifest(package: zipfile.ZipFile) -> PluginManifest:
     if unknown:
         raise ValueError(f"unknown manifest option(s): {', '.join(sorted(unknown))}")
     schema = int(data.get("schema", 1))
-    if schema != 1:
+    if schema not in SUPPORTED_SCHEMAS:
         raise ValueError(f"unsupported plugin schema: {schema}")
     plugin_id = str(data.get("id", ""))
     if not re.fullmatch(r"[a-z0-9][a-z0-9._-]{2,63}", plugin_id):
@@ -100,9 +103,11 @@ def inspect_plugin(path: str | Path) -> PluginManifest:
     path = Path(path)
     if path.suffix.lower() != PLUGIN_EXTENSION:
         raise ValueError(f"plugin file must use {PLUGIN_EXTENSION}")
-    if path.stat().st_size > 20 * 1024 * 1024:
+    if path.stat().st_size > MAX_PACKAGE_SIZE:
         raise ValueError("plugin package exceeds 20 MB")
     with zipfile.ZipFile(path) as package:
+        if sum(item.file_size for item in package.infolist()) > MAX_UNCOMPRESSED_SIZE:
+            raise ValueError("plugin package expands beyond 50 MB")
         return load_manifest(package)
 
 
@@ -133,10 +138,18 @@ class PluginManager:
         if self.directory.exists():
             for path in sorted(self.directory.glob(f"*{PLUGIN_EXTENSION}")):
                 try:
-                    found.append((inspect_plugin(path), path))
+                    manifest = inspect_plugin(path)
+                    if manifest.kind == "theme":
+                        from .theme import load_theme
+                        load_theme(path)
+                    else:
+                        from .data_provider import load_provider_config
+                        load_provider_config(InstalledPlugin(manifest, path, True))
+                    found.append((manifest, path))
                 except (OSError, ValueError, zipfile.BadZipFile):
                     continue
         installed_ids = {manifest.plugin_id for manifest, _path in found}
+        installed_kinds = {manifest.plugin_id: manifest.kind for manifest, _path in found}
         result = []
         for manifest, path in found:
             missing = [item for item in manifest.dependencies if item not in installed_ids]
@@ -146,6 +159,10 @@ class PluginManager:
                 problem = f"缺少前置：{', '.join(missing)}"
             elif disabled:
                 problem = f"前置未启用：{', '.join(disabled)}"
+            elif manifest.kind == "theme":
+                invalid = [item for item in manifest.dependencies if installed_kinds.get(item) != "data-provider"]
+                if invalid:
+                    problem = f"前置不是数据接口：{', '.join(invalid)}"
             result.append(InstalledPlugin(manifest, path, manifest.plugin_id not in self._disabled, problem))
         return result
 
@@ -157,6 +174,9 @@ class PluginManager:
         self.directory.mkdir(parents=True, exist_ok=True)
         for source, manifest in inspected:
             destination = self.directory / f"{manifest.plugin_id}{PLUGIN_EXTENSION}"
+            runtime = self.directory / ".runtime" / manifest.plugin_id
+            if runtime.exists():
+                shutil.rmtree(runtime)
             if source.resolve() != destination.resolve():
                 shutil.copy2(source, destination)
             self._disabled.discard(manifest.plugin_id)
@@ -175,6 +195,11 @@ class PluginManager:
                            (dependency in self._disabled and dependency not in selected)]
                 if missing:
                     raise ValueError(f"请先安装并启用前置插件：{', '.join(missing)}")
+                if inventory[plugin_id].manifest.kind == "theme":
+                    invalid = [dependency for dependency in inventory[plugin_id].manifest.dependencies
+                               if inventory[dependency].manifest.kind != "data-provider"]
+                    if invalid:
+                        raise ValueError(f"主题前置必须是数据接口插件：{', '.join(invalid)}")
                 self._disabled.discard(plugin_id)
             else:
                 dependents = [item.manifest.name for item in inventory.values()
@@ -196,5 +221,8 @@ class PluginManager:
             item = inventory.get(plugin_id)
             if item:
                 item.path.unlink()
+            runtime = self.directory / ".runtime" / plugin_id
+            if runtime.exists():
+                shutil.rmtree(runtime)
             self._disabled.discard(plugin_id)
         self._save()

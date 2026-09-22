@@ -15,11 +15,20 @@ from .device import discover_devices
 from .media import iter_media
 from .media import MediaFrame
 from .playback import play_frames
-from .plugin import PluginManager
-from .data_provider import DataService
+from .plugin import InstalledPlugin, PluginManager, inspect_plugin
+from .data_provider import DataService, load_provider_config
 from .protocol import display_bitmap_header
 from .render import dashboard_frame, fit_image, hardware_test_card, text_frame
-from .theme import discover_themes
+from .theme import discover_themes, load_theme
+
+
+def _inspect_installable_plugin(path: Path):
+    manifest = inspect_plugin(path)
+    if manifest.kind == "theme":
+        load_theme(path)
+    else:
+        load_provider_config(InstalledPlugin(manifest, path, True))
+    return manifest
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -69,6 +78,8 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("protocol", help="print inferred full-frame header")
     plugin_list = sub.add_parser("plugin-list", help="list installed plugins as JSON")
     plugin_list.add_argument("--directory", type=Path, default=Path("plugins"))
+    plugin_inspect = sub.add_parser("plugin-inspect", help="inspect plugin packages before installation")
+    plugin_inspect.add_argument("paths", nargs="+", type=Path)
     plugin_install = sub.add_parser("plugin-install", help="validate and install one or more plugins")
     plugin_install.add_argument("paths", nargs="+", type=Path)
     plugin_install.add_argument("--directory", type=Path, default=Path("plugins"))
@@ -106,9 +117,23 @@ def main(argv: list[str] | None = None) -> int:
             for theme in themes
         ], ensure_ascii=False))
         return 0
+    if args.command == "plugin-inspect":
+        manifests = [_inspect_installable_plugin(path) for path in args.paths]
+        print(json.dumps([
+            {
+                "id": item.plugin_id, "name": item.name, "version": item.version,
+                "author": item.author, "kind": item.kind, "description": item.description,
+                "dependencies": list(item.dependencies), "permissions": list(item.permissions),
+                "enabled": True, "problem": "",
+            }
+            for item in manifests
+        ], ensure_ascii=False))
+        return 0
     if args.command.startswith("plugin-") or args.command == "metrics":
         manager = PluginManager(args.directory)
         if args.command == "plugin-install":
+            for path in args.paths:
+                _inspect_installable_plugin(path)
             manager.install_many(args.paths)
         elif args.command == "plugin-enable":
             manager.set_enabled(args.ids, True)
@@ -220,7 +245,10 @@ def main(argv: list[str] | None = None) -> int:
             count = max(1, int(args.seconds / args.interval))
             frames = (
                 MediaFrame(
-                    dashboard_frame(theme=selected, data=data_service.snapshot()),
+                    dashboard_frame(
+                        theme=selected,
+                        data=data_service.snapshot(selected.dependencies if selected else ()),
+                    ),
                     round(args.interval * 1000),
                     index,
                 )
@@ -263,7 +291,7 @@ def main(argv: list[str] | None = None) -> int:
         selected = next((theme for theme in themes if theme.theme_id == args.theme_id), None)
         if args.theme_id and selected is None:
             raise SystemExit(f"theme is not installed or enabled: {args.theme_id}")
-        data = DataService(manager.scan()).snapshot()
+        data = DataService(manager.scan()).snapshot(selected.dependencies if selected else ())
         frame = dashboard_frame(theme=selected, data=data)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     frame.save(args.output)

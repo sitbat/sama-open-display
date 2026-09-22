@@ -103,6 +103,12 @@ public sealed class BackendService
     public Task InstallPluginsAsync(IEnumerable<string> paths) =>
         RunAsync(["plugin-install", .. paths, "--directory", PluginDirectory]);
 
+    public async Task<IReadOnlyList<PluginInfo>> InspectPluginsAsync(IEnumerable<string> paths)
+    {
+        string json = await RunAsync(["plugin-inspect", .. paths]);
+        return JsonSerializer.Deserialize<List<PluginInfo>>(json) ?? [];
+    }
+
     public Task EnablePluginsAsync(IEnumerable<string> ids, bool enabled) =>
         RunAsync([enabled ? "plugin-enable" : "plugin-disable", .. ids, "--directory", PluginDirectory]);
 

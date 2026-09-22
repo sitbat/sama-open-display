@@ -15,7 +15,7 @@
         <Grid ColumnSpacing="12">
             <StackPanel>
                 <TextBlock Style="{StaticResource TitleTextBlockStyle}" Text="插件中心" />
-                <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="批量管理主题、数据前置、依赖和只读电脑数据权限。" />
+                <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="批量管理自由布局主题、数据接口、前置依赖和执行权限。" />
             </StackPanel>
             <Button HorizontalAlignment="Right" VerticalAlignment="Center" Style="{StaticResource AccentButtonStyle}" Content="批量安装…" Click="Install_Click" />
         </Grid>

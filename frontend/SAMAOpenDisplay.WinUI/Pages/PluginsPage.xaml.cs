@@ -57,6 +57,35 @@ public sealed partial class PluginsPage : Page
             return;
         try
         {
+            IReadOnlyList<PluginInfo> pending = await BackendService.Current.InspectPluginsAsync(files.Select(file => file.Path));
+            bool executesCode = pending.Any(item => item.ExecutesCode);
+            StackPanel summary = new() { Spacing = 8 };
+            summary.Children.Add(new TextBlock
+            {
+                Text = string.Join(Environment.NewLine, pending.Select(item => $"• {item.Name} {item.Version} · {item.TypeLabel}")),
+                TextWrapping = TextWrapping.Wrap,
+            });
+            summary.Children.Add(new TextBlock
+            {
+                Text = executesCode
+                    ? "其中包含可执行数据接口插件。它会作为独立进程运行，但仍拥有当前 Windows 用户的权限；请只安装你信任来源的插件。"
+                    : "布局主题只包含声明式布局与资源，不会执行第三方代码。",
+                TextWrapping = TextWrapping.Wrap,
+                Foreground = executesCode
+                    ? new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.OrangeRed)
+                    : (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
+            });
+            ContentDialog confirmation = new()
+            {
+                XamlRoot = XamlRoot,
+                Title = executesCode ? "确认安装可执行插件" : "安装插件",
+                Content = summary,
+                PrimaryButtonText = "安装",
+                CloseButtonText = "取消",
+                DefaultButton = ContentDialogButton.Close,
+            };
+            if (await confirmation.ShowAsync() != ContentDialogResult.Primary)
+                return;
             await BackendService.Current.InstallPluginsAsync(files.Select(file => file.Path));
             await RefreshAsync();
             ShowStatus("安装完成", $"已安装 {files.Count} 个插件。", InfoBarSeverity.Success);

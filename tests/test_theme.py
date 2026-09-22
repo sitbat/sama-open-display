@@ -3,6 +3,7 @@ import unittest
 from pathlib import Path
 import zipfile
 
+from sama_display.render import dashboard_frame
 from sama_display.theme import BUILTIN_THEMES, discover_themes, install_theme, load_theme
 
 
@@ -42,6 +43,21 @@ class ThemeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             with self.assertRaises(ValueError):
                 load_theme(self._package(Path(tmp), bad))
+
+    def test_schema_two_custom_layout_binds_provider_data(self):
+        manifest = b'''[plugin]\nschema=2\nid="org.test.layout"\nname="Layout"\nversion="1.0.0"\nauthor="Tests"\nkind="theme"\nentry="theme.toml"\ndependencies=["org.test.sensor"]\n'''
+        layout = b'''[theme]\nid="sensor-layout"\nname="Sensor Layout"\n[display]\npreset="custom"\n[palette]\nbackground="#000000"\naccent="#00ff00"\n[[element]]\ntype="rectangle"\nx=20\ny=20\nwidth=300\nheight=120\nbackground="surface"\nradius=20\n[[element]]\ntype="text"\nx=40\ny=40\nwidth=260\nbind="org.test.sensor.temperature"\nformat=".1f"\nsuffix=" C"\ncolor="accent"\nfont_size=48\nbold=true\n[[element]]\ntype="progress"\nx=40\ny=100\nwidth=240\nheight=20\nbind="org.test.sensor.temperature"\nminimum=0\nmaximum=100\ncolor="accent"\nbackground="surface_alt"\nradius=10\n'''
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "layout.sodpkg"
+            with zipfile.ZipFile(path, "w") as package:
+                package.writestr("manifest.toml", manifest)
+                package.writestr("theme.toml", layout)
+            theme = load_theme(path)
+            frame = dashboard_frame(theme=theme, data={"org.test.sensor.temperature": 50.0})
+            self.assertEqual(theme.dependencies, ("org.test.sensor",))
+            self.assertEqual(theme.preset, "custom")
+            self.assertEqual(len(theme.elements), 3)
+            self.assertEqual(frame.getpixel((80, 110)), (0, 255, 0))
 
 
 if __name__ == "__main__":

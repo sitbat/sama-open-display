@@ -67,6 +67,75 @@ def _background(theme: DisplayTheme) -> Image.Image:
     return image
 
 
+def _theme_color(theme: DisplayTheme, value: str) -> str:
+    return str(getattr(theme, value)) if hasattr(theme, value) else value
+
+
+def _layout_value(binding: str, data: dict[str, object], now: datetime) -> object:
+    clock = {
+        "clock.time": now.strftime("%H:%M"),
+        "clock.time_seconds": now.strftime("%H:%M:%S"),
+        "clock.date": now.strftime("%Y-%m-%d"),
+        "clock.weekday": now.strftime("%A"),
+        "clock.timestamp": int(now.timestamp()),
+    }
+    return clock.get(binding, data.get(binding, "—"))
+
+
+def _format_layout_value(value: object, format_spec: str) -> str:
+    if not format_spec:
+        return str(value)
+    try:
+        return format(value, format_spec)
+    except (TypeError, ValueError):
+        return str(value)
+
+
+def _custom_layout(theme: DisplayTheme, data: dict[str, object], now: datetime) -> Image.Image:
+    image = _background(theme)
+    draw = ImageDraw.Draw(image)
+    assets = dict(theme.assets)
+    for element in theme.elements:
+        foreground = _theme_color(theme, element.color)
+        background = _theme_color(theme, element.background)
+        box = (element.x, element.y, element.x + element.width, element.y + element.height)
+        if element.element_type == "rectangle":
+            draw.rounded_rectangle(box, radius=element.radius, fill=background)
+            continue
+        if element.element_type == "progress":
+            draw.rounded_rectangle(box, radius=element.radius, fill=background)
+            raw_value = _layout_value(element.bind, data, now)
+            try:
+                numeric = float(raw_value)
+            except (TypeError, ValueError):
+                numeric = element.minimum
+            ratio = max(0.0, min(1.0, (numeric - element.minimum) / (element.maximum - element.minimum)))
+            if ratio > 0:
+                fill_box = (element.x, element.y, element.x + round(element.width * ratio), element.y + element.height)
+                draw.rounded_rectangle(fill_box, radius=element.radius, fill=foreground)
+            continue
+        if element.element_type == "image":
+            asset = assets.get(element.asset)
+            if asset is None:
+                continue
+            fitted = ImageOps.fit(asset, (element.width, element.height), Image.Resampling.LANCZOS) \
+                if element.fit == "cover" else ImageOps.contain(asset, (element.width, element.height), Image.Resampling.LANCZOS)
+            x = element.x + (element.width - fitted.width) // 2
+            y = element.y + (element.height - fitted.height) // 2
+            image.paste(fitted, (x, y), fitted if fitted.mode == "RGBA" else None)
+            continue
+
+        value = _layout_value(element.bind, data, now) if element.bind else element.text
+        text = f"{element.prefix}{_format_layout_value(value, element.format_spec)}{element.suffix}"
+        anchor = {"left": "lt", "center": "mt", "right": "rt"}[element.align]
+        x = element.x if element.align == "left" else element.x + (element.width // 2 if element.align == "center" else element.width)
+        draw.multiline_text(
+            (x, element.y), text, font=_font(element.font_size, element.bold), fill=foreground,
+            anchor=anchor, align=element.align, spacing=max(4, element.font_size // 5),
+        )
+    return image
+
+
 def _system_values(data: dict[str, float | int] | None = None) -> tuple[float, float, float, int]:
     if data is None:
         cpu = psutil.cpu_percent(interval=0.05)
@@ -83,9 +152,11 @@ def _system_values(data: dict[str, float | int] | None = None) -> tuple[float, f
 
 
 def dashboard_frame(now: datetime | None = None, theme: DisplayTheme | None = None,
-                    data: dict[str, float | int] | None = None) -> Image.Image:
+                    data: dict[str, object] | None = None) -> Image.Image:
     now = now or datetime.now()
     theme = theme or BUILTIN_THEMES[0]
+    if theme.preset == "custom":
+        return _custom_layout(theme, data or {}, now)
     image = _background(theme)
     draw = ImageDraw.Draw(image)
     cpu, memory, disk, hours = _system_values(data)

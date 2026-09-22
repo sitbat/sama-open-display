@@ -15,8 +15,11 @@ public sealed class PluginInfo
     [JsonPropertyName("enabled")] public bool Enabled { get; set; }
     [JsonPropertyName("problem")] public string Problem { get; set; } = "";
 
-    public string TypeLabel => Kind == "data-provider" ? "数据前置" : "显示主题";
+    public bool ExecutesCode => Permissions.Contains("code.execute", StringComparer.OrdinalIgnoreCase);
+    public string TypeLabel => Kind == "data-provider" ? "数据接口" : "布局主题";
     public string StateLabel => string.IsNullOrEmpty(Problem) ? (Enabled ? "已启用" : "已停用") : Problem;
     public string DependencyLabel => Dependencies.Length == 0 ? "无前置插件" : $"前置：{string.Join(", ", Dependencies)}";
-    public string PermissionLabel => Permissions.Length == 0 ? "不读取电脑数据" : $"权限：{string.Join(", ", Permissions)}";
+    public string PermissionLabel => Permissions.Length == 0
+        ? "无额外权限"
+        : $"权限：{string.Join(", ", Permissions.Select(item => item == "code.execute" ? "运行外部程序" : item))}";
 }

@@ -65,7 +65,10 @@ class DisplayApp(tk.Tk):
         self.current_theme = self.themes[0]
         self.appearance = tk.StringVar(value="light")
         self.theme_name = tk.StringVar(value=self.current_theme.name)
-        self.frame_image = dashboard_frame(theme=self.current_theme, data=self.data_service.snapshot())
+        self.frame_image = dashboard_frame(
+            theme=self.current_theme,
+            data=self.data_service.snapshot(self.current_theme.dependencies),
+        )
         self.preview_photo = None
         self.animation_job = None
         self.hardware_thread = None
@@ -228,7 +231,7 @@ class DisplayApp(tk.Tk):
         heading = ttk.Frame(panel, style="App.TFrame")
         heading.pack(fill="x", pady=(0, 12))
         ttk.Label(heading, text="插件中心", style="Title.TLabel").pack(side="left")
-        ttk.Label(heading, text="批量安装、启停和管理主题及数据前置插件", style="Sub.TLabel").pack(side="left", padx=14, pady=(8, 0))
+        ttk.Label(heading, text="批量安装、启停和管理布局主题及数据接口插件", style="Sub.TLabel").pack(side="left", padx=14, pady=(8, 0))
         ttk.Button(heading, text="批量安装…", style="Accent.TButton", command=self.install_plugins).pack(side="right")
 
         table_frame = ttk.Frame(panel, style="Panel.TFrame", padding=10)
@@ -286,7 +289,10 @@ class DisplayApp(tk.Tk):
 
     def _dashboard_tick(self) -> None:
         self.animation_job = None
-        self.frame_image = dashboard_frame(theme=self.current_theme, data=self.data_service.snapshot())
+        self.frame_image = dashboard_frame(
+            theme=self.current_theme,
+            data=self.data_service.snapshot(self.current_theme.dependencies),
+        )
         self.refresh_preview()
         self.animation_job = self.after(1000, self._dashboard_tick)
 
@@ -389,7 +395,10 @@ class DisplayApp(tk.Tk):
             controller = self._controller()
             while not self.hardware_stop.is_set():
                 frame_started = monotonic()
-                frame = dashboard_frame(theme=self.current_theme, data=self.data_service.snapshot())
+                frame = dashboard_frame(
+                    theme=self.current_theme,
+                    data=self.data_service.snapshot(self.current_theme.dependencies),
+                )
                 controller.display(frame, brightness=self.hardware_brightness, panel_rotation=90, cancelled=self.hardware_stop.is_set)
                 frames += 1
                 self.after(0, self._live_frame, frame, frames, monotonic() - started)
@@ -439,7 +448,10 @@ class DisplayApp(tk.Tk):
         self.theme_description.configure(text=selected.description or f"作者：{selected.author}")
         self.stop_preview_animation()
         self.source_name.set(f"主题预览 · {selected.name}")
-        self.frame_image = dashboard_frame(theme=selected, data=self.data_service.snapshot())
+        self.frame_image = dashboard_frame(
+            theme=selected,
+            data=self.data_service.snapshot(selected.dependencies),
+        )
         self.refresh_preview()
 
     def _selected_plugin_ids(self) -> list[str]:
@@ -463,7 +475,7 @@ class DisplayApp(tk.Tk):
         if hasattr(self, "plugin_table"):
             for item in self.plugin_table.get_children():
                 self.plugin_table.delete(item)
-            kind_names = {"theme": "显示主题", "data-provider": "数据前置"}
+            kind_names = {"theme": "布局主题", "data-provider": "数据接口"}
             for item in self.plugins:
                 manifest = item.manifest
                 status = item.problem or ("已启用" if item.enabled else "已停用")
