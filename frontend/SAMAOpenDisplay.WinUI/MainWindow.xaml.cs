@@ -1,6 +1,7 @@
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Navigation;
 using SAMAOpenDisplay_WinUI.Pages;
 using SAMAOpenDisplay_WinUI.Services;
 using WinRT.Interop;
@@ -35,7 +36,8 @@ public sealed partial class MainWindow : Window
             HideToTray,
             ExitApplication,
             () => App.Settings.Current.MinimizeToTray);
-        NavFrame.Navigate(typeof(HomePage));
+        NavFrame.Navigated += NavFrame_Navigated;
+        NavigateTo(typeof(HomePage));
     }
 
     public void ApplyAppearanceTheme(int selectedIndex)
@@ -90,32 +92,52 @@ public sealed partial class MainWindow : Window
 
     private void TitleBar_BackRequested(TitleBar sender, object args)
     {
-        NavFrame.GoBack();
+        if (NavFrame.CanGoBack)
+            NavFrame.GoBack();
     }
 
     private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
     {
         if (args.IsSettingsSelected)
         {
-            NavFrame.Navigate(typeof(SettingsPage));
+            NavigateTo(typeof(SettingsPage));
         }
         else if (args.SelectedItem is NavigationViewItem item)
         {
             switch (item.Tag)
             {
                 case "home":
-                    NavFrame.Navigate(typeof(HomePage));
+                    NavigateTo(typeof(HomePage));
                     break;
                 case "about":
-                    NavFrame.Navigate(typeof(AboutPage));
+                    NavigateTo(typeof(AboutPage));
                     break;
                 case "plugins":
-                    NavFrame.Navigate(typeof(PluginsPage));
+                    NavigateTo(typeof(PluginsPage));
                     break;
                 default:
                     throw new InvalidOperationException($"Unknown navigation item tag: {item.Tag}");
             }
         }
+    }
+
+    private void NavigateTo(Type pageType)
+    {
+        if (NavFrame.CurrentSourcePageType != pageType)
+            NavFrame.Navigate(pageType);
+    }
+
+    private void NavFrame_Navigated(object sender, NavigationEventArgs args)
+    {
+        object? item = args.SourcePageType == typeof(SettingsPage)
+            ? NavView.SettingsItem
+            : NavView.MenuItems.OfType<NavigationViewItem>().FirstOrDefault(menuItem =>
+                (args.SourcePageType == typeof(HomePage) && Equals(menuItem.Tag, "home")) ||
+                (args.SourcePageType == typeof(PluginsPage) && Equals(menuItem.Tag, "plugins")) ||
+                (args.SourcePageType == typeof(AboutPage) && Equals(menuItem.Tag, "about")));
+
+        if (item is not null && !ReferenceEquals(NavView.SelectedItem, item))
+            NavView.SelectedItem = item;
     }
 
     [System.Runtime.InteropServices.DllImport("user32.dll")]
