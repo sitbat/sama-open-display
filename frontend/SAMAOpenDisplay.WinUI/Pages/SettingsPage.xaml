@@ -57,6 +57,19 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <StackPanel>
+                        <TextBlock FontWeight="SemiBold" Text="启动软件即开始持续发送画面" />
+                        <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="每次启动软件后，检测到小屏便使用默认主题自动开始持续发送，无需再次确认。" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <ToggleSwitch x:Name="StartSendingToggle" Grid.Column="1" Toggled="BackgroundToggle_Toggled" />
+                </Grid>
+            </Border>
+            <Border Padding="18" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" CornerRadius="8">
+                <Grid ColumnSpacing="20">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
                         <TextBlock FontWeight="SemiBold" Text="最小化到系统托盘" />
                         <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="点击最小化按钮时隐藏任务栏窗口，继续在后台运行。" />
                     </StackPanel>

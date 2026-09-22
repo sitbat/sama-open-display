@@ -7,6 +7,7 @@ public sealed class AppSettings
     public int AppearanceTheme { get; set; }
     public bool StartWithWindows { get; set; }
     public bool StartMinimized { get; set; } = true;
+    public bool StartSendingOnLaunch { get; set; }
     public bool MinimizeToTray { get; set; } = true;
     public bool CloseToTray { get; set; } = true;
 }

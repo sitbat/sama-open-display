@@ -51,6 +51,8 @@ public sealed partial class HomePage : Page
         _initialized = true;
         await LoadThemesAsync();
         await Task.WhenAll(RefreshPreviewAsync(), DetectAsync());
+        if (App.Settings.Current.StartSendingOnLaunch)
+            await StartDashboardAsync(showUnavailableStatus: true);
     }
 
     private async Task LoadThemesAsync()
@@ -277,29 +279,6 @@ public sealed partial class HomePage : Page
         if (_displayDevice is null || string.IsNullOrWhiteSpace(_currentPreviewPath))
             return;
 
-        StackPanel details = new() { Spacing = 8 };
-        details.Children.Add(new TextBlock
-        {
-            Text = "即将向 USB 小屏写入一张完整画面。请先退出 SAMA 原厂软件，避免串口被同时占用。",
-            TextWrapping = TextWrapping.Wrap,
-        });
-        details.Children.Add(new TextBlock { Text = $"端口：{_displayDevice.Port}" });
-        details.Children.Add(new TextBlock { Text = $"USB：{_displayDevice.UsbId}" });
-        details.Children.Add(new TextBlock { Text = $"必须匹配的协议身份：{BackendService.VerifiedDisplayIdentity}" });
-        details.Children.Add(new TextBlock { Text = $"亮度：{(int)Math.Round(BrightnessSlider.Value)}%" });
-
-        ContentDialog dialog = new()
-        {
-            XamlRoot = XamlRoot,
-            Title = "确认发送当前画面",
-            Content = details,
-            PrimaryButtonText = "确认发送",
-            CloseButtonText = "取消",
-            DefaultButton = ContentDialogButton.Close,
-        };
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary)
-            return;
-
         _hardwareBusy = true;
         UpdateHardwareAvailability();
         HardwareInfo.IsOpen = true;
@@ -341,31 +320,25 @@ public sealed partial class HomePage : Page
             _dashboardCancellation?.Cancel();
             return;
         }
+        await StartDashboardAsync(showUnavailableStatus: false);
+    }
+
+    private async Task StartDashboardAsync(bool showUnavailableStatus)
+    {
         if (_displayDevice is null || ThemePicker.SelectedItem is not ThemeInfo theme)
-            return;
-
-        StackPanel details = new() { Spacing = 8 };
-        details.Children.Add(new TextBlock
         {
-            Text = "持续发送会先写入一张完整画面，随后按当前主题更新变化区域，直到你点击停止。请先退出 SAMA 原厂软件。",
-            TextWrapping = TextWrapping.Wrap,
-        });
-        details.Children.Add(new TextBlock { Text = $"端口：{_displayDevice.Port}" });
-        details.Children.Add(new TextBlock { Text = $"主题：{theme.Name}" });
-        details.Children.Add(new TextBlock { Text = "默认帧率：1 FPS（差分较大时会自动等待传输完成）" });
-        details.Children.Add(new TextBlock { Text = $"协议身份：{BackendService.VerifiedDisplayIdentity}" });
-
-        ContentDialog dialog = new()
-        {
-            XamlRoot = XamlRoot,
-            Title = "开始持续发送画面？",
-            Content = details,
-            PrimaryButtonText = "确认开始",
-            CloseButtonText = "取消",
-            DefaultButton = ContentDialogButton.Close,
-        };
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+            if (showUnavailableStatus)
+            {
+                HardwareInfo.IsOpen = true;
+                HardwareInfo.IsClosable = true;
+                HardwareInfo.Severity = InfoBarSeverity.Warning;
+                HardwareInfo.Title = "未能自动开始持续发送";
+                HardwareInfo.Message = _displayDevice is null
+                    ? "启动时未检测到目标小屏，请连接设备后手动开始。"
+                    : "当前没有可用主题，请检查主题或插件设置。";
+            }
             return;
+        }
 
         _hardwareBusy = true;
         _dashboardRunning = true;

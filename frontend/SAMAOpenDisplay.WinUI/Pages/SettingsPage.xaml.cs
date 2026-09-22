@@ -16,6 +16,7 @@ public sealed partial class SettingsPage : Page
         ThemePicker.SelectedIndex = Math.Clamp(settings.AppearanceTheme, 0, 2);
         StartupToggle.IsOn = settings.StartWithWindows;
         StartMinimizedToggle.IsOn = settings.StartMinimized;
+        StartSendingToggle.IsOn = settings.StartSendingOnLaunch;
         MinimizeToTrayToggle.IsOn = settings.MinimizeToTray;
         CloseToTrayToggle.IsOn = settings.CloseToTray;
         StartMinimizedToggle.IsEnabled = settings.StartWithWindows;
@@ -62,6 +63,7 @@ public sealed partial class SettingsPage : Page
 
         AppSettings settings = App.Settings.Current;
         settings.StartMinimized = StartMinimizedToggle.IsOn;
+        settings.StartSendingOnLaunch = StartSendingToggle.IsOn;
         settings.MinimizeToTray = MinimizeToTrayToggle.IsOn;
         settings.CloseToTray = CloseToTrayToggle.IsOn;
         SaveSettings();

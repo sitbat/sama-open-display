@@ -93,7 +93,7 @@
                         <Button x:Name="SendButton" HorizontalAlignment="Stretch" Style="{StaticResource AccentButtonStyle}" Content="发送当前画面" IsEnabled="False" Click="SendButton_Click" />
                         <Button x:Name="ContinuousButton" HorizontalAlignment="Stretch" Content="开始持续发送画面" IsEnabled="False" Click="ContinuousButton_Click" />
                         <InfoBar x:Name="HardwareInfo" IsOpen="False" IsClosable="True" />
-                        <TextBlock TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="单帧和持续发送都会先显示确认窗口，并再次核验设备协议身份。持续模式按 USB 链路可承受的低帧率运行。" />
+                        <TextBlock TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="单帧和持续发送会直接执行，并在写入前核验设备协议身份。持续模式按 USB 链路可承受的低帧率运行。" />
                     </StackPanel>
                 </Border>
             </StackPanel>
