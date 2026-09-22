@@ -40,5 +40,8 @@
       <ComponentRef Id="StartMenuFolder" />
     </Feature>
     <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+    <WixVariable Id="WixUILicenseRtf" Value="$(var.InstallerAssets)\License.rtf" />
+    <WixVariable Id="WixUIBannerBmp" Value="$(var.InstallerAssets)\Banner.png" />
+    <WixVariable Id="WixUIDialogBmp" Value="$(var.InstallerAssets)\Dialog.png" />
   </Package>
 </Wix>

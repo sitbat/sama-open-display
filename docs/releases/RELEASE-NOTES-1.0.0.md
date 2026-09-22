@@ -6,7 +6,9 @@
 
 下载 `SAMA-Open-Display-1.0.0-win-x64.msi`，在 Windows 11 x64 上运行安装向导。可以选择安装目录；默认为所有用户安装到 `Program Files`，需要管理员权限。安装后可从开始菜单启动，也可在 Windows“已安装的应用”中卸载。安装包尚未签名，Windows 可能显示发布者提示。
 
-MSI SHA-256：`7058AD51360E4851A1331F7D4EDFE1DD089CA594FFC6ADA0ABD3C9612D11E8F2`
+安装向导展示项目的 GPL-3.0-or-later 许可声明和应用品牌图，不包含 WiX 的示例协议或默认图片。
+
+MSI SHA-256：`CB6D0E7F867BB3541F147184F6B63AB6A61C060CC371CE22ECB42624BBA6732A`
 
 ## 主要功能
 
