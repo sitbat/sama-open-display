@@ -1,0 +1,44 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+  <Package Name="SAMA Open Display"
+           Manufacturer="SAMA Open Display contributors"
+           Version="1.0.0"
+           UpgradeCode="A7C8239B-70FD-4496-B8E9-0978A42E4512"
+           Scope="perMachine"
+           Language="2052">
+    <SummaryInformation Description="Open-source tool for displaying custom content on SAMA screen devices" />
+    <MajorUpgrade DowngradeErrorMessage="A newer SAMA Open Display version is already installed." />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="SAMA Open Display" />
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="SAMA Open Display" />
+    </StandardDirectory>
+
+    <Component Id="MainExecutable" Directory="INSTALLFOLDER" Guid="*">
+      <File Id="MainExecutableFile" Source="$(var.PayloadRoot)\SAMAOpenDisplay.exe" KeyPath="yes" />
+    </Component>
+    <Component Id="StartMenuFolder" Directory="ApplicationProgramsFolder" Guid="*">
+      <Shortcut Id="StartMenuShortcut" Name="SAMA Open Display"
+                Target="[INSTALLFOLDER]SAMAOpenDisplay.exe" WorkingDirectory="INSTALLFOLDER"
+                Icon="AppIcon" Advertise="no" />
+      <RemoveFolder Id="RemoveStartMenuFolder" On="uninstall" />
+      <RegistryValue Root="HKCU" Key="Software\SAMA Open Display"
+                     Name="StartMenuFolder" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+    <Icon Id="AppIcon" SourceFile="$(var.PayloadRoot)\Assets\AppIcon.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/sitbat/sama-open-display" />
+
+    <Feature Id="Complete" Title="SAMA Open Display" Level="1">
+      <Files Directory="INSTALLFOLDER" Include="$(var.PayloadRoot)\**">
+        <Exclude Files="$(var.PayloadRoot)\SAMAOpenDisplay.exe" />
+      </Files>
+      <ComponentRef Id="MainExecutable" />
+      <ComponentRef Id="StartMenuFolder" />
+    </Feature>
+    <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+  </Package>
+</Wix>

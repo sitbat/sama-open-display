@@ -6,7 +6,9 @@
 
 ## 使用 Windows 程序
 
-目录式发行包的入口是 `SAMAOpenDisplay.exe`。请保留它旁边的 DLL、`backend/` 和 `plugins/`，不要只复制 EXE。启动后：
+推荐下载 [1.0.0 MSI 安装包](https://github.com/sitbat/sama-open-display/releases/tag/v1.0.0)。安装向导允许选择安装目录；默认为所有用户安装到 `Program Files`，需要管理员权限，并会创建开始菜单入口，可从 Windows“已安装的应用”卸载。安装包尚未进行代码签名，首次运行可能显示 Windows 发布者提示。
+
+也可使用目录式发行包，入口是 `SAMAOpenDisplay.exe`。请保留它旁边的 DLL、`backend/` 和 `plugins/`，不要只复制 EXE。启动后：
 
 1. 在“显示与设备”选择“使用主题”“加载图片”或“显示文本”。预览只在电脑上生成画面。
 2. 确认右侧检测到目标 USB 小屏，再点击“发送当前画面”或“开始持续发送画面”。原厂程序占用显示串口时，请先退出原厂程序。
@@ -15,6 +17,8 @@
 程序会在写入前握手，并核对设备返回的标识 `chs_65inch.dev1_rom1.91`。WinUI 发送按钮不再弹出二次确认；开启“启动软件即开始持续发送画面”后，检测到目标设备即可自动发送。持续发送默认目标为 1 FPS，实际速度取决于画面变化量和 USB 链路；帧传输较慢时不会累积待发送帧。切换到其他页面不停止持续发送，彻底退出程序或点击停止按钮才会停止。
 
 内容模式、主题、图片路径、文本、适配方式和应用设置保存在 `%LOCALAPPDATA%\SAMA Open Display\settings.json`，下次启动会恢复。图片文件被移走时，显示内容会回退到主题。窗口默认收起左侧导航栏；是否在最小化或关闭时留在系统托盘可分别设置。
+
+安装包与目录版首次运行时，会把随程序提供的插件复制到 `%LOCALAPPDATA%\SAMA Open Display\plugins\`；之后导入、启停或卸载插件只修改该用户目录，不需要对程序安装目录的写入权限。卸载程序不会删除用户的设置和插件。
 
 ## 主题和数据插件
 
@@ -62,6 +66,15 @@ powershell -ExecutionPolicy Bypass -File scripts\build-winui.ps1
 ```
 
 输出位于 `dist\SAMA-Open-Display-WinUI\`。WinUI 主程序、.NET/Windows App SDK 组件、`backend\SAMAOpenDisplay.Backend.exe`、插件与文档分别存放。旧版经典 Python GUI 可运行 `.\.venv\Scripts\python.exe -m sama_display.app`，对应的目录式构建脚本是 `scripts\build-windows.ps1`；它不是当前推荐的 Windows 前端。
+
+构建 MSI 需安装 WiX Toolset 6 和 `WixToolset.UI.wixext/6.0.0` 扩展，再运行：
+
+```powershell
+wix extension add WixToolset.UI.wixext/6.0.0
+powershell -ExecutionPolicy Bypass -File scripts\build-msi.ps1
+```
+
+MSI 输出为 `dist\SAMA-Open-Display-1.0.0-win-x64.msi`。若尚未构建目录版，可向脚本传入 `-BuildApp`。
 
 ## 兼容范围与项目资料
 

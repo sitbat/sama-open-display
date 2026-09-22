@@ -6,4 +6,5 @@ dist/
 build/
 outputs/
 work/
+.wix/
 *.spec

@@ -8,7 +8,7 @@
 | [插件规范](../PLUGIN_SPEC.md) | `.sodpkg` 包、数据接口、布局主题和前置依赖 |
 | [设备协议](../PROTOCOL.md) | 全帧、扫描方向和差分更新的当前结论 |
 | [真机验证记录](hardware-validation/README.md) | 握手、方向、颜色、全帧和差分测试 |
-| [历史发布说明](releases/README.md) | 0.2.0 至 0.9.0 各版的功能和验证情况 |
+| [发布说明](releases/README.md) | 0.2.0 至 1.0.0 各版的功能和验证情况 |
 
 `hardware-validation/` 和 `releases/` 保存测试或发布当时的状态，其中的端口号、功能范围和操作流程不一定代表当前版本。现行行为以仓库首页、项目状态和当前代码为准。
 

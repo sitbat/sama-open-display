@@ -22,7 +22,8 @@ public sealed class BackendService
         if (File.Exists(bundledBackend))
         {
             RootDirectory = AppContext.BaseDirectory;
-            PluginDirectory = Path.Combine(AppContext.BaseDirectory, "plugins");
+            PluginDirectory = Path.Combine(GetDataDirectory(), "plugins");
+            MigrateBundledPlugins(PluginDirectory);
             UsesPythonModule = false;
             PythonExecutable = bundledBackend;
             return;
@@ -209,6 +210,25 @@ public sealed class BackendService
         return string.IsNullOrWhiteSpace(configuredDataDirectory)
             ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SAMA Open Display")
             : Path.GetFullPath(configuredDataDirectory);
+    }
+
+    private static void MigrateBundledPlugins(string destination)
+    {
+        // Installed app files may be read-only for the current user. Keep user-managed
+        // plugin packages and their enabled state outside the installation directory.
+        if (Directory.Exists(destination))
+            return;
+
+        Directory.CreateDirectory(destination);
+        string bundled = Path.Combine(AppContext.BaseDirectory, "plugins");
+        if (!Directory.Exists(bundled))
+            return;
+
+        foreach (string file in Directory.EnumerateFiles(bundled, "*.sodpkg"))
+            File.Copy(file, Path.Combine(destination, Path.GetFileName(file)), overwrite: false);
+        string state = Path.Combine(bundled, "plugins.json");
+        if (File.Exists(state))
+            File.Copy(state, Path.Combine(destination, "plugins.json"), overwrite: false);
     }
 
     private async Task<string> RenderPreviewAsync(params string[] contentArguments)

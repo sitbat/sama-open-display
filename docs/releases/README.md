@@ -4,6 +4,7 @@
 
 | 版本 | 主要变化 |
 | --- | --- |
+| [1.0.0](RELEASE-NOTES-1.0.0.md) | 首个公开 Release，Windows MSI 安装包 |
 | [0.9.0](RELEASE-NOTES-0.9.0.md) | WinUI 持续发送及差分刷新 |
 | [0.8.0](RELEASE-NOTES-0.8.0.md) | WinUI 单帧发送与身份核验 |
 | [0.7.2](RELEASE-NOTES-0.7.2.md) | 稳定主题选择器，内置主题 |
