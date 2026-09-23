@@ -4,6 +4,8 @@ __pycache__/
 .venv/
 dist/
 build/
+bin/
+obj/
 outputs/
 work/
 .wix/

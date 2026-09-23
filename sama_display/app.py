@@ -471,6 +471,7 @@ class DisplayApp(tk.Tk):
 
     def refresh_plugins(self) -> None:
         self.plugins = self.plugin_manager.scan()
+        self.data_service.close()
         self.data_service = DataService(self.plugins)
         if hasattr(self, "plugin_table"):
             for item in self.plugin_table.get_children():
@@ -528,6 +529,7 @@ class DisplayApp(tk.Tk):
         self.closing = True
         self.stop_preview_animation()
         self.hardware_stop.set()
+        self.data_service.close()
         self.destroy()
 
 

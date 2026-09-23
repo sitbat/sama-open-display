@@ -1,0 +1,11 @@
+[plugin]
+schema = 2
+id = "org.example.resident-counter-screen"
+name = "Resident Counter Screen Example"
+version = "1.0.0"
+author = "SAMA Open Display contributors"
+kind = "theme"
+entry = "theme.toml"
+description = "Shows data from the resident counter example"
+dependencies = ["org.example.resident-counter"]
+permissions = []

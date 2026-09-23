@@ -1,0 +1,9 @@
+[provider]
+adapter = "external.process"
+command = "ResidentCounter.exe"
+mode = "resident"
+timeout_ms = 1000
+refresh_interval_ms = 60000
+
+[fields]
+count = "integer"

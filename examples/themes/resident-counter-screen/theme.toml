@@ -1,0 +1,33 @@
+[theme]
+id = "resident-counter-screen"
+name = "常驻接口计数演示"
+author = "SAMA Open Display contributors"
+description = "每分钟向常驻数据接口采样一次；数字递增表示复用了同一进程"
+
+[display]
+preset = "custom"
+
+[palette]
+background = "#0f172a"
+surface = "#1e293b"
+text = "#f8fafc"
+accent = "#38bdf8"
+
+[[element]]
+type = "text"
+x = 120
+y = 180
+width = 1300
+text = "常驻数据接口 · 采样次数"
+color = "text"
+font_size = 52
+
+[[element]]
+type = "text"
+x = 120
+y = 280
+width = 1300
+bind = "org.example.resident-counter.count"
+color = "accent"
+font_size = 156
+bold = true

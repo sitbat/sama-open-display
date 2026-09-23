@@ -129,7 +129,8 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "plugin-uninstall":
             manager.uninstall(args.ids)
         if args.command == "metrics":
-            print(json.dumps(DataService(manager.scan()).snapshot(), ensure_ascii=False))
+            with DataService(manager.scan()) as data_service:
+                print(json.dumps(data_service.snapshot(), ensure_ascii=False))
             return 0
         inventory = [
             {
@@ -214,39 +215,39 @@ def main(argv: list[str] | None = None) -> int:
         selected = next((theme for theme in themes if theme.theme_id == args.theme_id), None)
         if args.theme_id and selected is None:
             raise SystemExit(f"theme is not installed or enabled: {args.theme_id}")
-        data_service = DataService(manager.scan())
-        count = max(1, int(args.seconds / args.interval))
-        frames = (
-            DisplayFrame(
-                dashboard_frame(
-                    theme=selected,
-                    data=data_service.snapshot(selected.dependencies if selected else ()),
-                ),
-                round(args.interval * 1000),
-                index,
+        with DataService(manager.scan()) as data_service:
+            count = max(1, int(args.seconds / args.interval))
+            frames = (
+                DisplayFrame(
+                    dashboard_frame(
+                        theme=selected,
+                        data=data_service.snapshot(selected.dependencies if selected else ()),
+                    ),
+                    round(args.interval * 1000),
+                    index,
+                )
+                for index in range(count)
             )
-            for index in range(count)
-        )
-        controller = DisplayController()
-        try:
-            controller.connect(allow_hardware=True)
-            controller.hello()
-            if controller.identity is None or controller.identity.raw != args.device_id:
-                actual = controller.identity.raw if controller.identity else "unknown"
-                raise RuntimeError(f"device identity mismatch: expected {args.device_id}, got {actual}")
-            stats = play_frames(
-                controller,
-                frames,
-                brightness=args.brightness,
-                max_frames=count,
-                cancelled=(lambda: bool(args.stop_file and args.stop_file.exists())),
-                on_frame=lambda count: print(f"frame {count}", file=sys.stderr, flush=True),
-            )
-            print(json.dumps({"frames": stats.frames, "elapsed_seconds": round(stats.elapsed_seconds, 3),
-                              "effective_fps": round(stats.effective_fps, 3)}))
-            return 0
-        finally:
-            controller.close()
+            controller = DisplayController()
+            try:
+                controller.connect(allow_hardware=True)
+                controller.hello()
+                if controller.identity is None or controller.identity.raw != args.device_id:
+                    actual = controller.identity.raw if controller.identity else "unknown"
+                    raise RuntimeError(f"device identity mismatch: expected {args.device_id}, got {actual}")
+                stats = play_frames(
+                    controller,
+                    frames,
+                    brightness=args.brightness,
+                    max_frames=count,
+                    cancelled=(lambda: bool(args.stop_file and args.stop_file.exists())),
+                    on_frame=lambda count: print(f"frame {count}", file=sys.stderr, flush=True),
+                )
+                print(json.dumps({"frames": stats.frames, "elapsed_seconds": round(stats.elapsed_seconds, 3),
+                                  "effective_fps": round(stats.effective_fps, 3)}))
+                return 0
+            finally:
+                controller.close()
     config = load_config(args.config)
     if args.image:
         with Image.open(args.image) as source:
@@ -263,7 +264,8 @@ def main(argv: list[str] | None = None) -> int:
         selected = next((theme for theme in themes if theme.theme_id == args.theme_id), None)
         if args.theme_id and selected is None:
             raise SystemExit(f"theme is not installed or enabled: {args.theme_id}")
-        data = DataService(manager.scan()).snapshot(selected.dependencies if selected else ())
+        with DataService(manager.scan()) as data_service:
+            data = data_service.snapshot(selected.dependencies if selected else ())
         frame = dashboard_frame(theme=selected, data=data)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     frame.save(args.output)

@@ -49,6 +49,8 @@ adapter = "builtin.system"
 adapter = "external.process"
 command = "sensor.exe"
 timeout_ms = 1000
+mode = "resident"
+refresh_interval_ms = 60000
 
 [fields]
 temperature = "number"
@@ -57,7 +59,27 @@ profile = "string"
 alarm = "boolean"
 ```
 
-`command` 是包根目录的 Windows `.exe` 文件，建议做成无额外文件依赖的单文件程序；超时值允许 100–10000 毫秒。`[fields]` 至少声明一个字段。字段类型为 `number`（有限数值）、`integer`、`string` 或 `boolean`，字段名最长 64 个字符。
+`command` 是包根目录的 Windows `.exe` 文件，建议做成无额外文件依赖的单文件程序；单次采样超时值允许 100–10000 毫秒。`refresh_interval_ms` 是采样间隔，范围 1000–300000 毫秒（最多 5 分钟）；常驻模式默认 60000 毫秒。`[fields]` 至少声明一个字段。字段类型为 `number`（有限数值）、`integer`、`string` 或 `boolean`，字段名最长 64 个字符。
+
+`mode = "resident"` 使用常驻进程：持续显示依赖该接口的主题时，宿主启动一次 EXE，按采样间隔向它发送多条请求；切换到不依赖它的主题、停止持续发送或后端退出时，先发送关闭请求，等待 0.5 秒，未退出则终止进程。没有声明 `mode` 的旧插件仍按 `oneshot` 模式每次启动、返回一次结果并退出，默认采样间隔为 1 秒。旧的单次请求程序不能仅靠修改 `provider.toml` 变成常驻程序，必须实现下面的持续读写协议。
+
+常驻程序应逐行读取标准输入。每收到一条 `sample` 请求，就向标准输出写入**一行** JSON 对象并刷新输出缓冲：
+
+```json
+{"protocol": 2, "plugin_id": "org.example.sensor", "action": "sample"}
+```
+
+收到 `shutdown` 请求后应自行退出；无需回复：
+
+```json
+{"protocol": 2, "plugin_id": "org.example.sensor", "action": "shutdown"}
+```
+
+标准输出只能用于逐行 JSON 响应，日志请写入标准错误。采样超时、协议错误或异常退出后，宿主会终止该进程，并在下一次重试时重新启动。一次失败不会阻止画面继续生成。
+
+可运行的最小 C# 示例在 `examples/providers/resident-counter/`。用 `dotnet publish examples/providers/resident-counter/ResidentCounter.csproj -c Release` 生成单文件 EXE，再把 `manifest.toml`、`provider.toml` 和生成的 `ResidentCounter.exe` 一起放在 `.sodpkg` ZIP 根目录；配套布局主题在 `examples/themes/resident-counter-screen/`，需单独打包成主题插件。示例的 `count` 字段每次采样递增，可用来验证进程确实被复用。
+
+旧版 `oneshot` 模式继续使用以下单次请求协议：
 
 每次调用时，宿主在标准输入发送一条 JSON 请求：
 
@@ -65,13 +87,13 @@ alarm = "boolean"
 {"protocol": 1, "plugin_id": "org.example.sensor"}
 ```
 
-程序向标准输出写一条 JSON 对象并以退出码 0 结束，例如：
+程序向标准输出写一条 JSON 对象并以退出码 0 结束，例如（常驻模式也返回同样的对象，但每次响应须以换行结尾，并且不会在采样后退出）：
 
 ```json
 {"temperature": 52.5, "fan_rpm": 1180, "profile": "Silent", "alarm": false}
 ```
 
-返回字段只能是 `[fields]` 中声明的名称，值必须符合类型。宿主会加上插件 ID 前缀，主题可绑定 `org.example.sensor.temperature` 等字段。返回值超过 1 MB、超时、退出失败或类型不符时，该次采样会被跳过，画面继续生成。运行中的主题只调用自己声明为前置的可执行接口；命令行 `metrics` 会主动采样所有已启用的数据接口。
+返回字段只能是 `[fields]` 中声明的名称，值必须符合类型。宿主会加上插件 ID 前缀，主题可绑定 `org.example.sensor.temperature` 等字段。返回值超过 1 MB、超时、退出失败或类型不符时，该次采样会被跳过，画面继续生成。运行中的主题只调用自己声明为前置的可执行接口；命令行 `metrics` 会主动采样所有已启用的数据接口并在命令结束时关闭进程。采样间隔内复用上次成功的结果，不会每帧重复请求接口。
 
 外部 EXE 会被提取到 `plugins/.runtime/<插件 ID>/` 下，更新或卸载插件时清理。它在独立进程中运行，但仍具有当前 Windows 用户的访问权限，并非系统级沙箱。安装界面会显示执行权限警告；只安装可信来源的可执行数据插件。
 

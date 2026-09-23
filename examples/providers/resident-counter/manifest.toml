@@ -1,0 +1,11 @@
+[plugin]
+schema = 2
+id = "org.example.resident-counter"
+name = "Resident Counter Example"
+version = "1.0.0"
+author = "SAMA Open Display contributors"
+kind = "data-provider"
+entry = "provider.toml"
+description = "Demonstrates one persistent process serving multiple samples"
+dependencies = []
+permissions = ["code.execute"]
