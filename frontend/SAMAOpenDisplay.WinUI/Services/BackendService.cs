@@ -73,7 +73,9 @@ public sealed class BackendService
         }
         foreach (string argument in arguments)
             start.ArgumentList.Add(argument);
+        using BackendProcessJob? processJob = BackendProcessJob.TryCreate();
         using Process process = Process.Start(start) ?? throw new InvalidOperationException("无法启动 SAMA Open Display 后端");
+        processJob?.TryAssign(process);
 
         // Drain both redirected pipes concurrently. The live dashboard writes
         // one progress line per frame to stderr; waiting for stdout to close
