@@ -17,7 +17,7 @@ from .plugin import InstalledPlugin, PluginManager, inspect_plugin
 from .data_provider import DataService, load_provider_config
 from .protocol import display_bitmap_header
 from .render import dashboard_frame, fit_image, hardware_test_card, text_frame
-from .theme import discover_themes, load_theme
+from .theme import BUILTIN_THEMES, discover_themes, load_theme
 
 
 def _inspect_installable_plugin(path: Path):
@@ -221,7 +221,7 @@ def main(argv: list[str] | None = None) -> int:
                 DisplayFrame(
                     dashboard_frame(
                         theme=selected,
-                        data=data_service.snapshot(selected.dependencies if selected else ()),
+                        data=data_service.snapshot((selected or BUILTIN_THEMES[0]).dependencies),
                     ),
                     round(args.interval * 1000),
                     index,
@@ -243,8 +243,16 @@ def main(argv: list[str] | None = None) -> int:
                     cancelled=(lambda: bool(args.stop_file and args.stop_file.exists())),
                     on_frame=lambda count: print(f"frame {count}", file=sys.stderr, flush=True),
                 )
-                print(json.dumps({"frames": stats.frames, "elapsed_seconds": round(stats.elapsed_seconds, 3),
-                                  "effective_fps": round(stats.effective_fps, 3)}))
+                print(json.dumps({
+                    "frames": stats.frames,
+                    "elapsed_seconds": round(stats.elapsed_seconds, 3),
+                    "effective_fps": round(stats.effective_fps, 3),
+                    "startup_seconds": (round(stats.startup_seconds, 3)
+                                        if stats.startup_seconds is not None else None),
+                    "steady_elapsed_seconds": round(stats.steady_elapsed_seconds, 3),
+                    "steady_fps": (round(stats.steady_fps, 3)
+                                   if stats.steady_fps is not None else None),
+                }))
                 return 0
             finally:
                 controller.close()
@@ -265,7 +273,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.theme_id and selected is None:
             raise SystemExit(f"theme is not installed or enabled: {args.theme_id}")
         with DataService(manager.scan()) as data_service:
-            data = data_service.snapshot(selected.dependencies if selected else ())
+            data = data_service.snapshot((selected or BUILTIN_THEMES[0]).dependencies)
         frame = dashboard_frame(theme=selected, data=data)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     frame.save(args.output)

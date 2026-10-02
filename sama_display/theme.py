@@ -21,6 +21,7 @@ except ModuleNotFoundError:  # Python 3.10
 _COLOR = re.compile(r"^#[0-9a-fA-F]{6}$")
 _BINDING = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 _PALETTE_NAMES = {"background", "surface", "surface_alt", "text", "muted", "accent", "accent_2", "accent_3"}
+SYSTEM_METRICS_PLUGIN_ID = "io.github.sitbat.sama-open-display.system-metrics"
 
 
 @dataclass(frozen=True)
@@ -71,16 +72,19 @@ class DisplayTheme:
 
 
 BUILTIN_THEMES = (
-    DisplayTheme("midnight", "午夜蓝", description="默认深色系统仪表盘"),
+    DisplayTheme("midnight", "午夜蓝", description="默认深色系统仪表盘",
+                 dependencies=(SYSTEM_METRICS_PLUGIN_ID,)),
     DisplayTheme(
         "daylight", "日光", description="清爽明亮的系统仪表盘", background="#edf4fb",
         surface="#ffffff", surface_alt="#dce8f2", text="#10233d", muted="#60758e",
         accent="#008c78", accent_2="#157ad6", accent_3="#7157c8",
+        dependencies=(SYSTEM_METRICS_PLUGIN_ID,),
     ),
     DisplayTheme(
         "minimal", "极简时钟", description="突出时间，弱化系统信息", preset="minimal_clock",
         background="#f7f8fb", surface="#ffffff", surface_alt="#e5e9f0", text="#162033",
         muted="#697386", accent="#0067c0", accent_2="#00a3a3", accent_3="#7a5af8",
+        dependencies=(SYSTEM_METRICS_PLUGIN_ID,),
     ),
 )
 
@@ -195,6 +199,8 @@ def _parse_theme(raw: dict, *, source: Path | None = None, background_image=None
     elements = _parse_elements(raw.get("element")) if preset == "custom" else ()
     if preset != "custom" and "element" in raw:
         raise ValueError("[[element]] is only valid for the custom preset")
+    if preset != "custom" and SYSTEM_METRICS_PLUGIN_ID not in dependencies:
+        dependencies = (*dependencies, SYSTEM_METRICS_PLUGIN_ID)
     defaults = BUILTIN_THEMES[0]
     return DisplayTheme(
         theme_id=theme_id, name=name, author=str(meta.get("author", "Unknown"))[:80],

@@ -22,6 +22,9 @@ class PlaybackStats:
     frames: int
     elapsed_seconds: float
     effective_fps: float
+    startup_seconds: float | None = None
+    steady_elapsed_seconds: float = 0.0
+    steady_fps: float | None = None
 
 
 def play_frames(
@@ -34,15 +37,39 @@ def play_frames(
     cancelled: Callable[[], bool] | None = None,
     on_frame: Callable[[int], None] | None = None,
 ) -> PlaybackStats:
-    """Send one full baseline followed by OEM CC deltas without queueing."""
+    """Pace frame generation and transfer together, without queued catch-up frames.
+
+    ``effective_fps`` includes startup and shutdown waits. ``steady_fps`` uses
+    completion intervals between delta frames (the second through last frame),
+    excluding the expensive full baseline and its transition to the first delta.
+    At least three completed frames are needed to measure that rate.
+    """
     started = monotonic()
+    next_frame_at = started
     count = 0
     previous = None
     frame_id = 0
-    for frame in frames:
+    iterator = iter(frames)
+    first_completed_at = None
+    steady_started_at = None
+    last_completed_at = None
+    while max_frames is None or count < max_frames:
         if cancelled and cancelled():
             break
+        # Re-read the clock after every sleep: scheduler delays must not be
+        # added once per polling slice. Check cancellation before next(), which
+        # can start a provider or spend time rendering a lazily generated frame.
+        remaining = next_frame_at - monotonic()
+        if remaining > 0:
+            sleep(min(0.05, remaining))
+            continue
         frame_started = monotonic()
+        try:
+            frame = next(iterator)
+        except StopIteration:
+            break
+        if cancelled and cancelled():
+            break
         try:
             if previous is None:
                 controller.display(
@@ -66,16 +93,24 @@ def play_frames(
             raise
         previous = frame.image
         count += 1
+        completed_at = monotonic()
+        if count == 1:
+            first_completed_at = completed_at
+        elif count == 2:
+            steady_started_at = completed_at
+        last_completed_at = completed_at
         if on_frame:
             on_frame(count)
-        if max_frames is not None and count >= max_frames:
-            break
-        remaining = frame.duration_ms / 1000 - (monotonic() - frame_started)
-        while remaining > 0:
-            if cancelled and cancelled():
-                break
-            pause = min(0.05, remaining)
-            sleep(pause)
-            remaining -= pause
+        # Acquisition, rendering, encoding, transfer and callback all share the
+        # same budget. If a frame overruns it, start one fresh frame next; never
+        # accumulate missed ticks or send bursts to catch up after slow startup.
+        next_frame_at = max(frame_started + frame.duration_ms / 1000, monotonic())
     elapsed = monotonic() - started
-    return PlaybackStats(count, elapsed, count / elapsed if elapsed > 0 else 0.0)
+    steady_elapsed = (last_completed_at - steady_started_at
+                      if count >= 3 else 0.0)
+    return PlaybackStats(
+        count, elapsed, count / elapsed if elapsed > 0 else 0.0,
+        first_completed_at - started if first_completed_at is not None else None,
+        steady_elapsed,
+        (count - 2) / steady_elapsed if steady_elapsed > 0 else None,
+    )

@@ -4,7 +4,9 @@ from pathlib import Path
 import zipfile
 
 from sama_display.render import dashboard_frame
-from sama_display.theme import BUILTIN_THEMES, discover_themes, install_theme, load_theme
+from sama_display.theme import (
+    BUILTIN_THEMES, SYSTEM_METRICS_PLUGIN_ID, discover_themes, install_theme, load_theme,
+)
 
 
 THEME = b'''[theme]\nid="test-blue"\nname="Test Blue"\nauthor="Tests"\n[display]\npreset="system_grid"\n[palette]\nbackground="#001122"\naccent="#00aaff"\n'''
@@ -12,10 +14,10 @@ MANIFEST = b'''[plugin]\nschema=1\nid="org.test.blue"\nname="Test Blue"\nversion
 
 
 class ThemeTests(unittest.TestCase):
-    def _package(self, directory: Path, data=THEME) -> Path:
+    def _package(self, directory: Path, data=THEME, manifest=MANIFEST) -> Path:
         path = directory / "source.sodpkg"
         with zipfile.ZipFile(path, "w") as package:
-            package.writestr("manifest.toml", MANIFEST)
+            package.writestr("manifest.toml", manifest)
             package.writestr("theme.toml", data)
         return path
 
@@ -25,6 +27,39 @@ class ThemeTests(unittest.TestCase):
             self.assertEqual(theme.theme_id, "test-blue")
             self.assertEqual(theme.preset, "system_grid")
             self.assertEqual(theme.accent, "#00aaff")
+            self.assertEqual(theme.dependencies, (SYSTEM_METRICS_PLUGIN_ID,))
+
+    def test_builtins_declare_system_metrics(self):
+        for theme in BUILTIN_THEMES:
+            with self.subTest(theme=theme.theme_id):
+                self.assertEqual(theme.dependencies, (SYSTEM_METRICS_PLUGIN_ID,))
+
+    def test_legacy_presets_declare_system_metrics(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            for preset in (b"dashboard", b"minimal_clock", b"system_grid"):
+                with self.subTest(preset=preset):
+                    data = THEME.replace(b"system_grid", preset)
+                    theme = load_theme(self._package(Path(tmp), data))
+                    self.assertEqual(theme.dependencies, (SYSTEM_METRICS_PLUGIN_ID,))
+
+    def test_preset_preserves_explicit_dependencies_without_duplicate_metrics(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            for dependencies in (("org.test.sensor",), ("org.test.sensor", SYSTEM_METRICS_PLUGIN_ID)):
+                with self.subTest(dependencies=dependencies):
+                    declared = ",".join(f'"{item}"' for item in dependencies)
+                    manifest = MANIFEST.replace(b"schema=1", b"schema=2") + f"dependencies=[{declared}]\n".encode()
+                    theme = load_theme(self._package(Path(tmp), manifest=manifest))
+                    self.assertEqual(theme.dependencies, ("org.test.sensor", SYSTEM_METRICS_PLUGIN_ID))
+
+    def test_custom_layout_keeps_only_declared_dependencies(self):
+        layout = b'''[theme]\nid="custom-layout"\nname="Custom Layout"\n[display]\npreset="custom"\n[[element]]\ntype="text"\ntext="Static content"\nx=0\ny=0\n'''
+        with tempfile.TemporaryDirectory() as tmp:
+            for dependencies in ((), (SYSTEM_METRICS_PLUGIN_ID,)):
+                with self.subTest(dependencies=dependencies):
+                    declared = ",".join(f'"{item}"' for item in dependencies)
+                    manifest = MANIFEST.replace(b"schema=1", b"schema=2") + f"dependencies=[{declared}]\n".encode()
+                    theme = load_theme(self._package(Path(tmp), layout, manifest))
+                    self.assertEqual(theme.dependencies, dependencies)
 
     def test_installs_under_stable_name(self):
         with tempfile.TemporaryDirectory() as tmp:

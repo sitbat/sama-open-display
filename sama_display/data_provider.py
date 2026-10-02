@@ -33,6 +33,7 @@ EXTERNAL_ADAPTER = "external.process"
 SUPPORTED_FIELD_TYPES = {"number", "integer", "string", "boolean"}
 _FIELD_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 MAX_RESPONSE_BYTES = 1024 * 1024
+REFRESH_SCHEDULING_TOLERANCE_SECONDS = 0.005
 
 
 @dataclass(frozen=True)
@@ -305,6 +306,7 @@ class DataService:
             self._next_refresh.clear()
 
     def snapshot(self, required_plugin_ids: Collection[str] | None = None) -> dict[str, str | float | int | bool]:
+        """Sample only requested providers, or all enabled providers for ``None``."""
         with self._lock:
             return self._snapshot(required_plugin_ids)
 
@@ -320,10 +322,10 @@ class DataService:
                 self._next_refresh.pop(plugin_id, None)
         values: dict[str, str | float | int | bool] = {}
         for plugin, config in self.plugins:
+            plugin_id = plugin.manifest.plugin_id
+            if required is not None and plugin_id not in required:
+                continue
             if config.adapter == EXTERNAL_ADAPTER:
-                plugin_id = plugin.manifest.plugin_id
-                if required is not None and plugin_id not in required:
-                    continue
                 resident = self._resident.get(plugin_id)
                 if resident is not None and resident.process.poll() is not None:
                     try:
@@ -331,7 +333,13 @@ class DataService:
                     except (OSError, subprocess.SubprocessError):
                         pass
                     self._next_refresh.pop(plugin_id, None)
-                if monotonic() < self._next_refresh.get(plugin_id, 0):
+                sample_started = monotonic()
+                # A 1 Hz renderer can arrive a fraction of a millisecond before
+                # the previous sample's deadline. Do not hold that value for an
+                # entire extra frame. Only successful cached samples get this
+                # small tolerance; failure retry deadlines remain unchanged.
+                tolerance = REFRESH_SCHEDULING_TOLERANCE_SECONDS if plugin_id in self._cached else 0.0
+                if sample_started < self._next_refresh.get(plugin_id, 0) - tolerance:
                     values.update(self._cached.get(plugin_id, {}))
                     continue
                 try:
@@ -344,7 +352,10 @@ class DataService:
                     else:
                         sample = _external_snapshot(plugin, config)
                     self._cached[plugin_id] = sample
-                    self._next_refresh[plugin_id] = monotonic() + config.refresh_interval_ms / 1000
+                    # The interval is start-to-start, so sample latency does not skip
+                    # the next regular frame. Calls are serialized; overdue samples
+                    # run once on the next call, with no catch-up loop.
+                    self._next_refresh[plugin_id] = sample_started + config.refresh_interval_ms / 1000
                     values.update(sample)
                 except (OSError, ValueError, RuntimeError, subprocess.SubprocessError, json.JSONDecodeError):
                     self._cached.pop(plugin_id, None)

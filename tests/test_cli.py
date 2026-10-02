@@ -1,11 +1,15 @@
 import unittest
 import tempfile
 import io
+import json
 from pathlib import Path
 from contextlib import redirect_stdout
+from unittest.mock import patch
 from PIL import Image
 
 from sama_display.cli import build_parser, main
+from sama_display.playback import PlaybackStats
+from sama_display.theme import SYSTEM_METRICS_PLUGIN_ID
 
 
 class CliTests(unittest.TestCase):
@@ -66,6 +70,41 @@ class CliTests(unittest.TestCase):
         self.assertEqual(args.theme_id, "minimal")
         self.assertEqual(args.stop_file, Path("stop.signal"))
         self.assertEqual(args.interval, 1.0)
+
+    def test_builtin_preview_requests_its_metrics_with_or_without_theme_option(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            for options in ([], ["--theme-id", "midnight"]):
+                with self.subTest(options=options), patch("sama_display.cli.DataService") as service:
+                    service.return_value.__enter__.return_value.snapshot.return_value = {}
+                    with redirect_stdout(io.StringIO()):
+                        main(["preview", "--plugins-directory", tmp,
+                              "--output", str(Path(tmp) / "preview.png"), *options])
+                    service.return_value.__enter__.return_value.snapshot.assert_called_once_with(
+                        (SYSTEM_METRICS_PLUGIN_ID,))
+
+    def test_live_default_theme_keeps_metrics_and_reports_startup_separately(self):
+        def offline_play(_controller, frames, **_kwargs):
+            self.assertEqual(len(list(frames)), 3)
+            return PlaybackStats(3, 12.0, 0.25, 8.0, 1.0, 1.0)
+
+        with tempfile.TemporaryDirectory() as tmp, \
+                patch("sama_display.cli.DisplayController") as controller, \
+                patch("sama_display.cli.DataService") as service, \
+                patch("sama_display.cli.play_frames", side_effect=offline_play), \
+                redirect_stdout(io.StringIO()) as output:
+            controller.return_value.identity.raw = "test-device"
+            snapshot = service.return_value.__enter__.return_value.snapshot
+            snapshot.return_value = {}
+            main(["dashboard-live", "--device-id", "test-device", "--write-hardware",
+                  "--seconds", "3", "--plugins-directory", tmp])
+            self.assertEqual(snapshot.call_count, 3)
+            self.assertTrue(all(call.args == ((SYSTEM_METRICS_PLUGIN_ID,),)
+                                for call in snapshot.call_args_list))
+            result = json.loads(output.getvalue())
+            self.assertEqual(result["effective_fps"], 0.25)
+            self.assertEqual(result["startup_seconds"], 8.0)
+            self.assertEqual(result["steady_elapsed_seconds"], 1.0)
+            self.assertEqual(result["steady_fps"], 1.0)
 
 
 if __name__ == "__main__":
